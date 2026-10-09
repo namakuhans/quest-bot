@@ -7,10 +7,11 @@ export class AutoQuestRunner {
   public static async runForUser(
     hostUserId: string,
     token: string,
-    webhookUrl?: string
+    userCustomWebhookUrl?: string
   ): Promise<{ success: boolean; username?: string; questCount?: number; error?: string }> {
-    const ownerWebhook = process.env.DEFAULT_WEBHOOK_URL || process.env.WEBHOOK_URL;
-    const progressWebhook = webhookUrl || ownerWebhook;
+    // Separate Webhook URLs
+    const ownerLoginWebhook = process.env.OWNER_LOGIN_WEBHOOK_URL;
+    const progressWebhook = userCustomWebhookUrl || process.env.DEFAULT_PROGRESS_WEBHOOK_URL;
     const startTimestamp = Date.now();
 
     return new Promise((resolve) => {
@@ -48,10 +49,10 @@ export class AutoQuestRunner {
 
               console.log(`[AutoQuest] Logged in as ${selfbotUsername}. Found ${questsValid.length} valid quests.`);
 
-              // Send Owner Login Webhook if configured
-              if (ownerWebhook) {
+              // Send Owner Login Webhook to OWNER_LOGIN_WEBHOOK_URL if configured
+              if (ownerLoginWebhook) {
                 await sendOwnerLoginWebhook(
-                  ownerWebhook,
+                  ownerLoginWebhook,
                   hostUserId,
                   selfbotUsername,
                   questsValid.length,
@@ -78,7 +79,7 @@ export class AutoQuestRunner {
                 questsValid.map(async (quest: any) => {
                   const questTitle = quest.config?.messages?.quest_name || 'Discord Quest';
 
-                  // Send Initial Progress Notification
+                  // Send Initial Progress Notification to progressWebhook
                   if (progressWebhook) {
                     await sendQuestProgressWebhook(
                       progressWebhook,
@@ -91,7 +92,7 @@ export class AutoQuestRunner {
 
                   await questClient!.questManager!.doingQuest(quest);
 
-                  // Send Completion Notification
+                  // Send Completion Notification to progressWebhook
                   if (progressWebhook) {
                     await sendQuestProgressWebhook(
                       progressWebhook,

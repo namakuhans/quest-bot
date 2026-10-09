@@ -71,7 +71,7 @@ async function runTests() {
   const invalidProgressRes = await sendQuestProgressWebhook('invalid-url', '12345678', '@testuser', 'Genshin Impact', 'Complete');
   assert.strictEqual(invalidLoginRes, false);
   assert.strictEqual(invalidProgressRes, false);
-  console.log('✅ Owner Login & Quest Progress webhook invalid URL handling verified.');
+  console.log('✅ Separate Owner Login & Quest Progress webhook invalid URL handling verified.');
 
   console.log('--- All Tests Passed Successfully! ---');
 }
