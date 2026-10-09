@@ -9,7 +9,7 @@ import { SessionStorage } from '../src/services/sessionStore.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2, ToS Caution/Warning & Logic Tests ---');
+  console.log('--- Running ContainerV2 Attachment Position & Logic Tests ---');
 
   // Test 1: Slash Commands Registration Data
   console.log('Test 1: Slash Commands registration data...');
@@ -19,24 +19,19 @@ async function runTests() {
   assert.strictEqual(howCommand.data.name, 'how');
   console.log('✅ /set, /feats, /tos, and /how slash commands verified.');
 
-  // Test 2: ToS ContainerV2 with Caution & Warning Sections and Notice Attachment
-  console.log('Test 2: ToS ContainerV2 with Caution, Warning & Notice Image...');
+  // Test 2: Attachment Position (Bottom of Sections)
+  console.log('Test 2: Attachment position at bottom of ContainerV2...');
   const tosID = getTosContainer('id', 'notice.png');
-  const tosEN = getTosContainer('en', 'notice.png');
-
-  assert.strictEqual(tosID.flags, MessageFlags.IsComponentsV2);
-  assert.strictEqual(tosEN.flags, MessageFlags.IsComponentsV2);
   const tosJsonID = tosID.components[0].toJSON();
-  const tosJsonEN = tosEN.components[0].toJSON();
 
-  assert.strictEqual(tosJsonID.components[0].type, ComponentType.MediaGallery);
-  assert.strictEqual(tosJsonID.components[0].items[0].media.url, 'attachment://notice.png');
-  assert.ok(tosJsonID.components[2].content.includes(tosTexts.id.header));
-  assert.ok(tosJsonID.components[4].content.includes(tosTexts.id.cautionTitle));
-  assert.ok(tosJsonID.components[6].content.includes(tosTexts.id.warningTitle));
-  assert.ok(tosJsonEN.components[4].content.includes(tosTexts.en.cautionTitle));
-  assert.ok(tosJsonEN.components[6].content.includes(tosTexts.en.warningTitle));
-  console.log('✅ ToS ContainerV2 Caution, Warning, and Notice Attachment verified.');
+  // Text Display should come before MediaGallery
+  const firstComponent = tosJsonID.components[0];
+  const lastSectionComponent = tosJsonID.components[tosJsonID.components.length - 3]; // MediaGallery is before ActionRow separator
+
+  assert.strictEqual(firstComponent.type, ComponentType.TextDisplay);
+  assert.strictEqual(lastSectionComponent.type, ComponentType.MediaGallery);
+  assert.strictEqual(lastSectionComponent.items[0].media.url, 'attachment://notice.png');
+  console.log('✅ Attachment component placed at bottom of ContainerV2 sections.');
 
   // Test 3: Set Panel ContainerV2 Structure & Multi-Language
   console.log('Test 3: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');

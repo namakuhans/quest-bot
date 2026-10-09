@@ -28,24 +28,7 @@ export function buildContainerV2(options: {
     container.setAccentColor(options.accentColor);
   }
 
-  // Add Media Gallery or File Component if attachmentUrl is specified
-  if (options.attachmentUrl) {
-    if (options.useMediaGallery) {
-      const mediaGallery = new MediaGalleryBuilder().addItems(
-        new MediaGalleryItemBuilder().setURL(options.attachmentUrl)
-      );
-      container.addMediaGalleryComponents(mediaGallery);
-    } else {
-      const fileComponent = new FileBuilder().setURL(options.attachmentUrl);
-      container.addFileComponents(fileComponent);
-    }
-
-    const separator = new SeparatorBuilder()
-      .setSpacing(SeparatorSpacingSize.Large)
-      .setDivider(true);
-    container.addSeparatorComponents(separator);
-  }
-
+  // 1. Text Sections
   options.sections.forEach((section, index) => {
     let text = section.content;
     if (section.title) {
@@ -55,7 +38,7 @@ export function buildContainerV2(options: {
     const textDisplay = new TextDisplayBuilder().setContent(text);
     container.addTextDisplayComponents(textDisplay);
 
-    // Add large spacing separator between sections
+    // Add large spacing separator between text sections
     if (index < options.sections.length - 1) {
       const separator = new SeparatorBuilder()
         .setSpacing(SeparatorSpacingSize.Large)
@@ -64,6 +47,25 @@ export function buildContainerV2(options: {
     }
   });
 
+  // 2. Attachments at the bottom of the section blocks
+  if (options.attachmentUrl) {
+    const separator = new SeparatorBuilder()
+      .setSpacing(SeparatorSpacingSize.Large)
+      .setDivider(true);
+    container.addSeparatorComponents(separator);
+
+    if (options.useMediaGallery) {
+      const mediaGallery = new MediaGalleryBuilder().addItems(
+        new MediaGalleryItemBuilder().setURL(options.attachmentUrl)
+      );
+      container.addMediaGalleryComponents(mediaGallery);
+    } else {
+      const fileComponent = new FileBuilder().setURL(options.attachmentUrl);
+      container.addFileComponents(fileComponent);
+    }
+  }
+
+  // 3. Action Rows (Buttons / Select Menus)
   if (options.actionRows && options.actionRows.length > 0) {
     // Add separator before action row
     const separator = new SeparatorBuilder()
