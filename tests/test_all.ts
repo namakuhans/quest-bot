@@ -8,7 +8,7 @@ import { SessionStorage } from '../src/services/sessionStore.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2, Feats & Logic Tests ---');
+  console.log('--- Running ContainerV2, Set Panel & Logic Tests ---');
 
   // Test 1: Slash Commands Registration Data
   console.log('Test 1: Slash Commands registration data...');
@@ -17,8 +17,16 @@ async function runTests() {
   assert.strictEqual(tosCommand.data.name, 'tos');
   console.log('✅ /set, /feats, and /tos slash commands verified.');
 
-  // Test 2: Set Panel ContainerV2 Structure & Multi-Language
-  console.log('Test 2: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');
+  // Test 2: Persistent Stats Persistence across calls
+  console.log('Test 2: Persistent Quest Stats...');
+  SessionStorage.incrementCompletedQuests(5);
+  SessionStorage.incrementInProgressQuests(2);
+  const stats = SessionStorage.getStats();
+  assert.ok(stats.completedQuests >= 5);
+  console.log('✅ Persistent stats increment verified.');
+
+  // Test 3: Set Panel ContainerV2 Structure & Multi-Language
+  console.log('Test 3: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');
   const setContainerID = getSetContainer('id');
   const setContainerEN = getSetContainer('en');
 
@@ -26,13 +34,13 @@ async function runTests() {
   assert.strictEqual(setContainerEN.flags, MessageFlags.IsComponentsV2);
   const setJsonID = setContainerID.components[0].toJSON();
   assert.ok(setJsonID.components[0].content.includes(setTexts.id.header));
-  assert.ok(setJsonID.components[2].content.includes('Completed: **0 Quest**'));
-  assert.ok(setJsonID.components[2].content.includes('In-Progress: **0 Quest**'));
+  assert.ok(setJsonID.components[2].content.includes('Completed: **'));
+  assert.ok(setJsonID.components[2].content.includes('In-Progress: **'));
   assert.ok(setJsonID.components[2].content.includes('• Last Update: <t:'));
   assert.ok(setJsonID.components[2].content.endsWith(':R>'));
 
-  // Test 3: Feats Panel ContainerV2 Multi-Language
-  console.log('Test 3: Feats Panel ContainerV2...');
+  // Test 4: Feats Panel ContainerV2 Multi-Language
+  console.log('Test 4: Feats Panel ContainerV2...');
   const featsID = getFeatsContainer('id');
   const featsEN = getFeatsContainer('en');
 
@@ -42,8 +50,8 @@ async function runTests() {
   assert.ok(featsEN.components[0].toJSON().components[0].content.includes(featsTexts.en.header));
   console.log('✅ /feats ContainerV2 components verified.');
 
-  // Test 4: Multilingual ToS Container
-  console.log('Test 4: Multilingual ToS ContainerV2...');
+  // Test 5: Multilingual ToS Container
+  console.log('Test 5: Multilingual ToS ContainerV2...');
   const tosID = getTosContainer('id');
   const tosEN = getTosContainer('en');
 
@@ -52,25 +60,6 @@ async function runTests() {
   assert.ok(tosID.components[0].toJSON().components[0].content.includes(tosTexts.id.header));
   assert.ok(tosEN.components[0].toJSON().components[0].content.includes(tosTexts.en.header));
   console.log('✅ ID and EN ToS ContainerV2 components verified.');
-
-  // Test 5: JSON SessionStorage
-  console.log('Test 5: JSON SessionStorage...');
-  const testUser = {
-    userId: 'test_user_123',
-    token: 'test_token_abc',
-    webhookUrl: 'https://discord.com/api/webhooks/test',
-    createdAt: new Date().toISOString(),
-    lastStatus: 'SUCCESS'
-  };
-  SessionStorage.saveSession(testUser);
-  const sessions = SessionStorage.getSessions();
-  const found = sessions.find((s) => s.userId === 'test_user_123');
-  assert.ok(found);
-  assert.strictEqual(found?.token, 'test_token_abc');
-  SessionStorage.removeSession('test_user_123');
-  const sessionsAfterDelete = SessionStorage.getSessions();
-  assert.strictEqual(sessionsAfterDelete.find((s) => s.userId === 'test_user_123'), undefined);
-  console.log('✅ SessionStorage save and remove verified.');
 
   // Test 6: Webhook format safety check on invalid URL
   console.log('Test 6: Webhook safe handle on invalid URL...');

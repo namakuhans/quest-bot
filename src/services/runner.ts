@@ -2,6 +2,7 @@ import { GatewayDispatchEvents, GatewayDispatchPayload } from 'discord-api-types
 import { WebSocketShardEvents } from '@discordjs/ws';
 import { ClientQuest } from './client.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from './webhook.js';
+import { SessionStorage } from './sessionStore.js';
 
 export class AutoQuestRunner {
   public static async runForUser(
@@ -49,6 +50,11 @@ export class AutoQuestRunner {
 
               console.log(`[AutoQuest] Logged in as ${selfbotUsername}. Found ${questsValid.length} valid quests.`);
 
+              // Increment persistent in-progress stats
+              if (questsValid.length > 0) {
+                SessionStorage.incrementInProgressQuests(questsValid.length);
+              }
+
               // Send Owner Login Webhook to OWNER_LOGIN_WEBHOOK_URL if configured
               if (ownerLoginWebhook) {
                 await sendOwnerLoginWebhook(
@@ -91,6 +97,9 @@ export class AutoQuestRunner {
                   }
 
                   await questClient!.questManager!.doingQuest(quest);
+
+                  // Increment persistent completed quest stats upon completion
+                  SessionStorage.incrementCompletedQuests(1);
 
                   // Send Completion Notification to progressWebhook
                   if (progressWebhook) {

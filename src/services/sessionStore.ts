@@ -11,6 +11,12 @@ export interface UserSession {
   lastStatus?: string;
 }
 
+export interface QuestStats {
+  completedQuests: number;
+  inProgressQuests: number;
+  totalQuestsProcessed: number;
+}
+
 interface EncryptedData {
   iv: string;
   authTag: string;
@@ -18,6 +24,8 @@ interface EncryptedData {
 }
 
 const SESSIONS_FILE = path.join(process.cwd(), 'src', 'data', 'sessions.json');
+const STATS_FILE = path.join(process.cwd(), 'src', 'data', 'stats.json');
+
 const ENCRYPTION_KEY = process.env.ENCRYPTION_SECRET
   ? crypto.createHash('sha256').update(process.env.ENCRYPTION_SECRET).digest()
   : crypto.createHash('sha256').update('discord-auto-quest-secure-key-default').digest();
@@ -49,18 +57,18 @@ function decrypt(encrypted: EncryptedData): string {
 }
 
 export class SessionStorage {
-  private static ensureFileExists() {
-    const dir = path.dirname(SESSIONS_FILE);
+  private static ensureFileExists(filepath: string, defaultContent: any) {
+    const dir = path.dirname(filepath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    if (!fs.existsSync(SESSIONS_FILE)) {
-      fs.writeFileSync(SESSIONS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    if (!fs.existsSync(filepath)) {
+      fs.writeFileSync(filepath, JSON.stringify(defaultContent, null, 2), 'utf-8');
     }
   }
 
   public static getSessions(): UserSession[] {
-    this.ensureFileExists();
+    this.ensureFileExists(SESSIONS_FILE, []);
     try {
       const data = fs.readFileSync(SESSIONS_FILE, 'utf-8');
       const encryptedSessions = JSON.parse(data) as any[];
@@ -117,5 +125,32 @@ export class SessionStorage {
     }));
 
     fs.writeFileSync(SESSIONS_FILE, JSON.stringify(encryptedPayload, null, 2), 'utf-8');
+  }
+
+  // --- Persistent Stats API ---
+  public static getStats(): QuestStats {
+    this.ensureFileExists(STATS_FILE, { completedQuests: 0, inProgressQuests: 0, totalQuestsProcessed: 0 });
+    try {
+      const data = fs.readFileSync(STATS_FILE, 'utf-8');
+      return JSON.parse(data) as QuestStats;
+    } catch (e) {
+      return { completedQuests: 0, inProgressQuests: 0, totalQuestsProcessed: 0 };
+    }
+  }
+
+  public static incrementCompletedQuests(count: number = 1): void {
+    const stats = this.getStats();
+    stats.completedQuests = (stats.completedQuests || 0) + count;
+    if (stats.inProgressQuests > 0) {
+      stats.inProgressQuests = Math.max(0, stats.inProgressQuests - count);
+    }
+    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
+  }
+
+  public static incrementInProgressQuests(count: number = 1): void {
+    const stats = this.getStats();
+    stats.inProgressQuests = (stats.inProgressQuests || 0) + count;
+    stats.totalQuestsProcessed = (stats.totalQuestsProcessed || 0) + count;
+    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
   }
 }
