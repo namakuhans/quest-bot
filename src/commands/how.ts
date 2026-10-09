@@ -51,7 +51,8 @@ export function getAttachmentFile(): { attachmentPath?: string; fileName?: strin
   const assetsDir = path.join(process.cwd(), 'assets');
   if (fs.existsSync(assetsDir)) {
     const files = fs.readdirSync(assetsDir);
-    const mp4File = files.find((f) => f.endsWith('.mp4'));
+    // Prioritize specific filename lv_0_20261010035306.mp4 or any .mp4 file in assets
+    const mp4File = files.find((f) => f === 'lv_0_20261010035306.mp4') || files.find((f) => f.endsWith('.mp4'));
     if (mp4File) {
       return {
         attachmentPath: path.join(assetsDir, mp4File),
