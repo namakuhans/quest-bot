@@ -3,10 +3,7 @@ import {
   ActionRowBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
-  SlashCommandBuilder,
-  REST,
-  Routes,
-  InteractionResponseType
+  SlashCommandBuilder
 } from 'discord.js';
 import { buildContainerV2 } from '../utils/container.js';
 
@@ -87,18 +84,9 @@ export const tosCommand = {
   async execute(interaction: ChatInputCommandInteraction) {
     const containerData = getTosContainer('id');
 
-    const rest = new REST({ timeout: 60000, retries: 5 }).setToken(interaction.client.token);
-    await rest.post(
-      Routes.interactionCallback(interaction.id, interaction.token),
-      {
-        body: {
-          type: InteractionResponseType.ChannelMessageWithSource,
-          data: {
-            flags: containerData.flags,
-            components: containerData.components.map((c) => c.toJSON())
-          }
-        }
-      }
-    );
+    await interaction.reply({
+      flags: containerData.flags as any,
+      components: containerData.components as any
+    });
   }
 };

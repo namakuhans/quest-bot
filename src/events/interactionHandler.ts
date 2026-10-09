@@ -5,10 +5,7 @@ import {
   ActionRowBuilder,
   ModalSubmitInteraction,
   ButtonInteraction,
-  StringSelectMenuInteraction,
-  REST,
-  Routes,
-  InteractionResponseType
+  StringSelectMenuInteraction
 } from 'discord.js';
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
@@ -107,72 +104,38 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
 }
 
 export async function handleSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
-  const rest = new REST({ timeout: 60000, retries: 5 }).setToken(interaction.client.token);
-
   if (interaction.customId === 'set_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getSetContainer(selectedLang);
 
-    await rest.post(
-      Routes.interactionCallback(interaction.id, interaction.token),
-      {
-        body: {
-          type: InteractionResponseType.UpdateMessage,
-          data: {
-            flags: containerData.flags,
-            components: containerData.components.map((c) => c.toJSON())
-          }
-        }
-      }
-    );
+    await interaction.update({
+      flags: containerData.flags as any,
+      components: containerData.components as any
+    });
   } else if (interaction.customId === 'feats_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getFeatsContainer(selectedLang);
 
-    await rest.post(
-      Routes.interactionCallback(interaction.id, interaction.token),
-      {
-        body: {
-          type: InteractionResponseType.UpdateMessage,
-          data: {
-            flags: containerData.flags,
-            components: containerData.components.map((c) => c.toJSON())
-          }
-        }
-      }
-    );
+    await interaction.update({
+      flags: containerData.flags as any,
+      components: containerData.components as any
+    });
   } else if (interaction.customId === 'tos_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getTosContainer(selectedLang);
 
-    await rest.post(
-      Routes.interactionCallback(interaction.id, interaction.token),
-      {
-        body: {
-          type: InteractionResponseType.UpdateMessage,
-          data: {
-            flags: containerData.flags,
-            components: containerData.components.map((c) => c.toJSON())
-          }
-        }
-      }
-    );
+    await interaction.update({
+      flags: containerData.flags as any,
+      components: containerData.components as any
+    });
   } else if (interaction.customId === 'how_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const fileInfo = getAttachmentFile();
     const containerData = getHowContainer(selectedLang, fileInfo.fileName);
 
-    await rest.post(
-      Routes.interactionCallback(interaction.id, interaction.token),
-      {
-        body: {
-          type: InteractionResponseType.UpdateMessage,
-          data: {
-            flags: containerData.flags,
-            components: containerData.components.map((c) => c.toJSON())
-          }
-        }
-      }
-    );
+    await interaction.update({
+      flags: containerData.flags as any,
+      components: containerData.components as any
+    });
   }
 }

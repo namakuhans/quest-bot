@@ -5,6 +5,8 @@ import {
   SeparatorSpacingSize,
   ActionRowBuilder,
   FileBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
   MessageFlags
 } from 'discord.js';
 
@@ -18,6 +20,7 @@ export function buildContainerV2(options: {
   sections: SectionBlock[];
   actionRows?: ActionRowBuilder<any>[];
   attachmentUrl?: string;
+  useMediaGallery?: boolean;
 }) {
   const container = new ContainerBuilder();
 
@@ -25,10 +28,17 @@ export function buildContainerV2(options: {
     container.setAccentColor(options.accentColor);
   }
 
-  // Add FileComponent if attachmentUrl is specified
+  // Add Media Gallery or File Component if attachmentUrl is specified
   if (options.attachmentUrl) {
-    const fileComponent = new FileBuilder().setURL(options.attachmentUrl);
-    container.addFileComponents(fileComponent);
+    if (options.useMediaGallery) {
+      const mediaGallery = new MediaGalleryBuilder().addItems(
+        new MediaGalleryItemBuilder().setURL(options.attachmentUrl)
+      );
+      container.addMediaGalleryComponents(mediaGallery);
+    } else {
+      const fileComponent = new FileBuilder().setURL(options.attachmentUrl);
+      container.addFileComponents(fileComponent);
+    }
 
     const separator = new SeparatorBuilder()
       .setSpacing(SeparatorSpacingSize.Large)

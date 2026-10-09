@@ -24,7 +24,7 @@ if (!token) {
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
   rest: {
-    timeout: 60000,
+    timeout: 120000,
     retries: 5
   }
 });
@@ -34,7 +34,7 @@ client.once('ready', async () => {
 
   // Register commands
   if (clientId) {
-    const rest = new REST({ timeout: 60000, retries: 5 }).setToken(token);
+    const rest = new REST({ timeout: 120000, retries: 5 }).setToken(token);
     try {
       console.log('Registering slash commands...');
       await rest.put(Routes.applicationCommands(clientId), {
@@ -94,8 +94,11 @@ client.on('interactionCreate', async (interaction: Interaction) => {
       await handleSelectMenuInteraction(interaction);
       return;
     }
-  } catch (error) {
-    console.error('Error handling interaction:', error);
+  } catch (error: any) {
+    console.error('❌ Error handling interaction:', error);
+    if (error.rawError) {
+      console.error('❌ Detailed Discord API raw error:', JSON.stringify(error.rawError, null, 2));
+    }
   }
 });
 

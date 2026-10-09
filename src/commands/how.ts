@@ -6,9 +6,7 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   SlashCommandBuilder,
-  REST,
-  Routes,
-  InteractionResponseType
+  AttachmentBuilder
 } from 'discord.js';
 import { buildContainerV2 } from '../utils/container.js';
 
@@ -87,7 +85,7 @@ export function getHowContainer(lang: 'id' | 'en', fileName?: string) {
 
   return buildContainerV2({
     accentColor: 0x5865f2,
-    ...(fileName ? { attachmentUrl: `attachment://${fileName}` } : {}),
+    ...(fileName ? { attachmentUrl: `attachment://${fileName}`, useMediaGallery: true } : {}),
     sections: [
       {
         title: data.header,
@@ -116,55 +114,21 @@ export const howCommand = {
     const fileName = fileInfo.fileName;
     const containerData = getHowContainer('id', fileName);
 
-    const filesPayload: { name: string; data: Buffer }[] = [];
-    let attachmentsPayload: { id: number; filename: string }[] | undefined = undefined;
-
     if (fileInfo.attachmentPath && fileName) {
       const fileBuffer = fs.readFileSync(fileInfo.attachmentPath);
-      filesPayload.push({
-        name: fileName,
-        data: fileBuffer
+      const attachment = new AttachmentBuilder(fileBuffer, { name: fileName });
+
+      await interaction.reply({
+        flags: containerData.flags as any,
+        components: containerData.components as any,
+        files: [attachment]
       });
-      attachmentsPayload = [
-        {
-          id: 0,
-          filename: fileName
-        }
-      ];
-    }
-
-    const rest = new REST({ timeout: 60000, retries: 5 }).setToken(interaction.client.token);
-
-    if (filesPayload.length > 0) {
-      await rest.post(
-        Routes.interactionCallback(interaction.id, interaction.token),
-        {
-          body: {
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: {
-              flags: containerData.flags,
-              components: containerData.components.map((c) => c.toJSON()),
-              attachments: attachmentsPayload
-            }
-          },
-          files: filesPayload
-        }
-      );
     } else {
-      // Send ContainerV2 without referencing an unattached file
       const noFileContainer = getHowContainer('id');
-      await rest.post(
-        Routes.interactionCallback(interaction.id, interaction.token),
-        {
-          body: {
-            type: InteractionResponseType.ChannelMessageWithSource,
-            data: {
-              flags: noFileContainer.flags,
-              components: noFileContainer.components.map((c) => c.toJSON())
-            }
-          }
-        }
-      );
+      await interaction.reply({
+        flags: noFileContainer.flags as any,
+        components: noFileContainer.components as any
+      });
     }
   }
 };
