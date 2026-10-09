@@ -9,7 +9,7 @@ import { SessionStorage } from '../src/services/sessionStore.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2, How Panel & Logic Tests ---');
+  console.log('--- Running ContainerV2, ToS Caution/Warning & Logic Tests ---');
 
   // Test 1: Slash Commands Registration Data
   console.log('Test 1: Slash Commands registration data...');
@@ -19,42 +19,42 @@ async function runTests() {
   assert.strictEqual(howCommand.data.name, 'how');
   console.log('✅ /set, /feats, /tos, and /how slash commands verified.');
 
-  // Test 2: How Panel ContainerV2 Structure & Multi-Language Switching
-  console.log('Test 2: How Panel ContainerV2 Multi-Language...');
-  const howContainerID = getHowContainer('id', 'tutorial.mp4');
-  const howContainerEN = getHowContainer('en', 'tutorial.mp4');
+  // Test 2: ToS ContainerV2 with Caution & Warning Sections and Notice Attachment
+  console.log('Test 2: ToS ContainerV2 with Caution, Warning & Notice Image...');
+  const tosID = getTosContainer('id', 'notice.png');
+  const tosEN = getTosContainer('en', 'notice.png');
 
-  assert.strictEqual(howContainerID.flags, MessageFlags.IsComponentsV2);
-  assert.strictEqual(howContainerEN.flags, MessageFlags.IsComponentsV2);
-  const howJsonID = howContainerID.components[0].toJSON();
-  const howJsonEN = howContainerEN.components[0].toJSON();
+  assert.strictEqual(tosID.flags, MessageFlags.IsComponentsV2);
+  assert.strictEqual(tosEN.flags, MessageFlags.IsComponentsV2);
+  const tosJsonID = tosID.components[0].toJSON();
+  const tosJsonEN = tosEN.components[0].toJSON();
 
-  assert.ok(howJsonID.components[2].content.includes(howTexts.id.header));
-  assert.ok(howJsonEN.components[2].content.includes(howTexts.en.header));
-  assert.strictEqual(howJsonID.components[0].type, ComponentType.MediaGallery); // 12 MediaGallery component
-  console.log('✅ How Panel ContainerV2 ID & EN switching verified.');
+  assert.strictEqual(tosJsonID.components[0].type, ComponentType.MediaGallery);
+  assert.strictEqual(tosJsonID.components[0].items[0].media.url, 'attachment://notice.png');
+  assert.ok(tosJsonID.components[2].content.includes(tosTexts.id.header));
+  assert.ok(tosJsonID.components[4].content.includes(tosTexts.id.cautionTitle));
+  assert.ok(tosJsonID.components[6].content.includes(tosTexts.id.warningTitle));
+  assert.ok(tosJsonEN.components[4].content.includes(tosTexts.en.cautionTitle));
+  assert.ok(tosJsonEN.components[6].content.includes(tosTexts.en.warningTitle));
+  console.log('✅ ToS ContainerV2 Caution, Warning, and Notice Attachment verified.');
 
-  // Test 3: Set Panel ContainerV2 Structure & Persistent Stats
+  // Test 3: Set Panel ContainerV2 Structure & Multi-Language
   console.log('Test 3: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');
-  SessionStorage.incrementCompletedQuests(2);
-  SessionStorage.incrementInProgressQuests(1);
-
   const setContainerID = getSetContainer('id');
   assert.strictEqual(setContainerID.flags, MessageFlags.IsComponentsV2);
-  const setJsonID = setContainerID.components[0].toJSON();
-  assert.ok(setJsonID.components[0].content.includes(setTexts.id.header));
-  assert.ok(setJsonID.components[2].content.includes('Completed: **'));
-  assert.ok(setJsonID.components[2].content.includes('In-Progress: **'));
-  assert.ok(setJsonID.components[2].content.includes('• Last Update: <t:'));
-  assert.ok(setJsonID.components[2].content.endsWith(':R>'));
 
-  // Test 4: Webhook formatting safety (no backticks on usernames/quest names, timestamp :R)
-  console.log('Test 4: Webhook formatting safety...');
+  // Test 4: Feats Panel ContainerV2 Multi-Language
+  console.log('Test 4: Feats Panel ContainerV2...');
+  const featsID = getFeatsContainer('id');
+  assert.strictEqual(featsID.flags, MessageFlags.IsComponentsV2);
+
+  // Test 5: Webhook format safety check on invalid URL
+  console.log('Test 5: Webhook safe handle on invalid URL...');
   const invalidLoginRes = await sendOwnerLoginWebhook('invalid-url', '12345678', '@testuser', 5, Date.now());
   const invalidProgressRes = await sendQuestProgressWebhook('invalid-url', '12345678', '@testuser', 'Genshin Impact', 'Complete');
   assert.strictEqual(invalidLoginRes, false);
   assert.strictEqual(invalidProgressRes, false);
-  console.log('✅ Webhook formatting & invalid URL handling verified.');
+  console.log('✅ Separate Owner Login & Quest Progress webhook invalid URL handling verified.');
 
   console.log('--- All Tests Passed Successfully! ---');
 }

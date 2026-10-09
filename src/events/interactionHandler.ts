@@ -13,7 +13,7 @@ import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
 import { getSetContainer } from '../commands/set.js';
 import { getFeatsContainer } from '../commands/feats.js';
-import { getTosContainer } from '../commands/tos.js';
+import { getTosContainer, getTosNoticeAttachment } from '../commands/tos.js';
 import { getHowContainer, getAttachmentFile } from '../commands/how.js';
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
@@ -126,12 +126,25 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     });
   } else if (interaction.customId === 'tos_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
-    const containerData = getTosContainer(selectedLang);
+    const noticeInfo = getTosNoticeAttachment();
+    const containerData = getTosContainer(selectedLang, noticeInfo.fileName);
 
-    await interaction.editReply({
-      flags: containerData.flags as any,
-      components: containerData.components as any
-    });
+    if (noticeInfo.attachmentPath && noticeInfo.fileName) {
+      const fileBuffer = await fs.promises.readFile(noticeInfo.attachmentPath);
+      const attachment = new AttachmentBuilder(fileBuffer, { name: noticeInfo.fileName });
+
+      await interaction.editReply({
+        flags: containerData.flags as any,
+        components: containerData.components as any,
+        files: [attachment]
+      });
+    } else {
+      const noFileContainer = getTosContainer(selectedLang);
+      await interaction.editReply({
+        flags: noFileContainer.flags as any,
+        components: noFileContainer.components as any
+      });
+    }
   } else if (interaction.customId === 'how_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const fileInfo = getAttachmentFile();
