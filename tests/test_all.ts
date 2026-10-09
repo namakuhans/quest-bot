@@ -1,15 +1,24 @@
 import assert from 'assert';
 import { ComponentType, MessageFlags } from 'discord.js';
-import { descTexts, getDescContainer } from '../src/commands/desc.js';
+import { descTexts, getDescContainer, descCommand } from '../src/commands/desc.js';
+import { tosTexts, getTosContainer, tosCommand } from '../src/commands/tos.js';
+import { setCommand } from '../src/commands/set.js';
 import { buildContainerV2 } from '../src/utils/container.js';
 import { SessionStorage } from '../src/services/sessionStore.js';
 import { sendWebhookNotification } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2 & Logic Tests ---');
+  console.log('--- Running ContainerV2, ToS & Logic Tests ---');
 
-  // Test 1: ContainerV2 Payload Structure with Separators and MessageFlags
-  console.log('Test 1: ContainerV2 payload structure with Separators & MessageFlags...');
+  // Test 1: Slash Commands Registration Data
+  console.log('Test 1: Slash Commands registration data...');
+  assert.strictEqual(setCommand.data.name, 'set');
+  assert.strictEqual(descCommand.data.name, 'desc');
+  assert.strictEqual(tosCommand.data.name, 'tos');
+  console.log('✅ /set, /desc, and /tos slash commands verified.');
+
+  // Test 2: ContainerV2 Payload Structure with Separators and MessageFlags
+  console.log('Test 2: ContainerV2 payload structure with Separators & MessageFlags...');
   const testContainer = buildContainerV2({
     accentColor: 0x5865f2,
     sections: [
@@ -25,21 +34,21 @@ async function runTests() {
   assert.strictEqual(containerJson.components[0].type, ComponentType.TextDisplay); // 10
   assert.strictEqual(containerJson.components[1].type, ComponentType.Separator); // 14
   assert.strictEqual(containerJson.components[2].type, ComponentType.TextDisplay); // 10
-  console.log('✅ ContainerV2 payload structure with Separator components verified.');
+  console.log('✅ ContainerV2 payload structure verified.');
 
-  // Test 2: Multilingual Description Container
-  console.log('Test 2: Multilingual Description ContainerV2...');
-  const containerID = getDescContainer('id');
-  const containerEN = getDescContainer('en');
+  // Test 3: Multilingual Description & ToS Container
+  console.log('Test 3: Multilingual ToS ContainerV2...');
+  const tosID = getTosContainer('id');
+  const tosEN = getTosContainer('en');
 
-  assert.strictEqual(containerID.flags, MessageFlags.IsComponentsV2);
-  assert.strictEqual(containerEN.flags, MessageFlags.IsComponentsV2);
-  assert.ok(containerID.components[0].toJSON().components[0].content.includes(descTexts.id.header));
-  assert.ok(containerEN.components[0].toJSON().components[0].content.includes(descTexts.en.header));
-  console.log('✅ ID and EN ContainerV2 components verified.');
+  assert.strictEqual(tosID.flags, MessageFlags.IsComponentsV2);
+  assert.strictEqual(tosEN.flags, MessageFlags.IsComponentsV2);
+  assert.ok(tosID.components[0].toJSON().components[0].content.includes(tosTexts.id.header));
+  assert.ok(tosEN.components[0].toJSON().components[0].content.includes(tosTexts.en.header));
+  console.log('✅ ID and EN ToS ContainerV2 components verified.');
 
-  // Test 3: JSON SessionStorage
-  console.log('Test 3: JSON SessionStorage...');
+  // Test 4: JSON SessionStorage
+  console.log('Test 4: JSON SessionStorage...');
   const testUser = {
     userId: 'test_user_123',
     token: 'test_token_abc',
@@ -56,8 +65,8 @@ async function runTests() {
   assert.strictEqual(sessionsAfterDelete.find((s) => s.userId === 'test_user_123'), undefined);
   console.log('✅ SessionStorage save and remove verified.');
 
-  // Test 4: Webhook format safety check
-  console.log('Test 4: Webhook safe handle on invalid URL...');
+  // Test 5: Webhook format safety check
+  console.log('Test 5: Webhook safe handle on invalid URL...');
   const invalidResult = await sendWebhookNotification('invalid-url', 'User#0000', 'Test Quest');
   assert.strictEqual(invalidResult, false);
   console.log('✅ Webhook invalid URL handling verified.');

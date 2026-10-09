@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, REST, Routes, Interaction } from 'discord.js
 import dotenv from 'dotenv';
 import { setCommand } from './commands/set.js';
 import { descCommand } from './commands/desc.js';
+import { tosCommand } from './commands/tos.js';
 import {
   handleButtonInteraction,
   handleModalSubmit,
@@ -32,7 +33,11 @@ client.once('ready', async () => {
     try {
       console.log('Registering slash commands...');
       await rest.put(Routes.applicationCommands(clientId), {
-        body: [setCommand.data.toJSON(), descCommand.data.toJSON()]
+        body: [
+          setCommand.data.toJSON(),
+          descCommand.data.toJSON(),
+          tosCommand.data.toJSON()
+        ]
       });
       console.log('Successfully registered slash commands!');
     } catch (err) {
@@ -58,6 +63,8 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         await setCommand.execute(interaction);
       } else if (interaction.commandName === 'desc') {
         await descCommand.execute(interaction);
+      } else if (interaction.commandName === 'tos') {
+        await tosCommand.execute(interaction);
       }
       return;
     }

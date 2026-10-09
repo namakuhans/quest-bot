@@ -13,6 +13,7 @@ import {
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
 import { getDescContainer } from '../commands/desc.js';
+import { getTosContainer } from '../commands/tos.js';
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
   if (interaction.customId === 'open_login_modal') {
@@ -48,7 +49,7 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
     const webhookUrl = interaction.fields.getTextInputValue('webhook_url').trim() || undefined;
 
     await interaction.reply({
-      content: '⏳ **Memverifikasi token dan menginisialisasi Auto Quest...** Mohon tunggu sebentar.',
+      content: '⏳ **Mengautentikasi dan menginisialisasi Auto Quest...** Mohon tunggu sebentar.',
       ephemeral: true
     });
 
@@ -74,7 +75,7 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
           });
 
           await interaction.followUp({
-            content: `✅ **Auto Quest Berhasil Dijalankan!**\n• User: \`${result.username}\`\n• Total Quest Diproses: \`${result.questCount}\``,
+            content: `✅ **Auto Quest Berhasil Dimulai!**\n• User: \`${result.username}\`\n• Quest Ditemukan: \`${result.questCount}\` quest sedang diproses di background.\n• Notifikasi: Laporan penyelesaian quest akan dikirimkan via Webhook.`,
             ephemeral: true
           }).catch(() => {});
         } else {
@@ -88,7 +89,7 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
           });
 
           await interaction.followUp({
-            content: `❌ **Gagal Menjalankan Auto Quest**: ${result.error}`,
+            content: `❌ **Otentikasi Gagal**: ${result.error}`,
             ephemeral: true
           }).catch(() => {});
         }
@@ -106,6 +107,23 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
   if (interaction.customId === 'desc_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getDescContainer(selectedLang);
+
+    const rest = new REST().setToken(interaction.client.token);
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: InteractionResponseType.UpdateMessage,
+          data: {
+            flags: containerData.flags,
+            components: containerData.components.map((c) => c.toJSON())
+          }
+        }
+      }
+    );
+  } else if (interaction.customId === 'tos_language_select') {
+    const selectedLang = interaction.values[0] as 'id' | 'en';
+    const containerData = getTosContainer(selectedLang);
 
     const rest = new REST().setToken(interaction.client.token);
     await rest.post(
