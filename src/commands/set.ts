@@ -40,6 +40,7 @@ export function getSetContainer(lang: 'id' | 'en') {
   const sessions = SessionStorage.getSessions();
   const completedCount = sessions.filter((s) => s.lastStatus === 'SUCCESS').length;
   const inProgressCount = sessions.filter((s) => !s.lastStatus || s.lastStatus.startsWith('RUNNING') || s.lastStatus === 'IN_PROGRESS').length;
+  const currentTimestamp = Math.floor(Date.now() / 1000);
 
   const data = setTexts[lang];
 
@@ -71,8 +72,8 @@ export function getSetContainer(lang: 'id' | 'en') {
   const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 
   const statsContent = lang === 'id'
-    ? `• Completed: **${completedCount} Quest**\n• In-Progress: **${inProgressCount} Quest**`
-    : `• Completed: **${completedCount} Quests**\n• In-Progress: **${inProgressCount} Quests**`;
+    ? `• Completed: **${completedCount} Quest**\n• In-Progress: **${inProgressCount} Quest**\n\n• Last Update: <t:${currentTimestamp}:F> (<t:${currentTimestamp}:R>)`
+    : `• Completed: **${completedCount} Quests**\n• In-Progress: **${inProgressCount} Quests**\n\n• Last Update: <t:${currentTimestamp}:F> (<t:${currentTimestamp}:R>)`;
 
   return buildContainerV2({
     accentColor: 0x5865f2,
