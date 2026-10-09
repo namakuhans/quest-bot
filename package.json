@@ -1,0 +1,28 @@
+{
+  "name": "discord-auto-quest-bot",
+  "version": "1.0.0",
+  "description": "Discord.js Auto Quest Bot with login panel and ContainerV2 UI",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "test": "tsx tests/test_all.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/core": "^2.4.0",
+    "@discordjs/rest": "^2.6.0",
+    "@discordjs/ws": "^2.0.4",
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
+    "undici": "^6.21.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
