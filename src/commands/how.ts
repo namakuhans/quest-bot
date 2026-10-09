@@ -81,7 +81,7 @@ export function getHowContainer(lang: 'id' | 'en', fileName?: string) {
     );
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-  const data = howTexts[lang];
+  const data = howTexts[lang] || howTexts.id;
 
   return buildContainerV2({
     accentColor: 0x5865f2,

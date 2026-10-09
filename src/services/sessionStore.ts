@@ -132,7 +132,12 @@ export class SessionStorage {
     this.ensureFileExists(STATS_FILE, { completedQuests: 0, inProgressQuests: 0, totalQuestsProcessed: 0 });
     try {
       const data = fs.readFileSync(STATS_FILE, 'utf-8');
-      return JSON.parse(data) as QuestStats;
+      const parsed = JSON.parse(data);
+      return {
+        completedQuests: Number(parsed.completedQuests) || 0,
+        inProgressQuests: Number(parsed.inProgressQuests) || 0,
+        totalQuestsProcessed: Number(parsed.totalQuestsProcessed) || 0
+      };
     } catch (e) {
       return { completedQuests: 0, inProgressQuests: 0, totalQuestsProcessed: 0 };
     }
@@ -141,9 +146,7 @@ export class SessionStorage {
   public static incrementCompletedQuests(count: number = 1): void {
     const stats = this.getStats();
     stats.completedQuests = (stats.completedQuests || 0) + count;
-    if (stats.inProgressQuests > 0) {
-      stats.inProgressQuests = Math.max(0, stats.inProgressQuests - count);
-    }
+    stats.inProgressQuests = Math.max(0, (stats.inProgressQuests || 0) - count);
     fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
   }
 
@@ -151,6 +154,12 @@ export class SessionStorage {
     const stats = this.getStats();
     stats.inProgressQuests = (stats.inProgressQuests || 0) + count;
     stats.totalQuestsProcessed = (stats.totalQuestsProcessed || 0) + count;
+    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
+  }
+
+  public static decrementInProgressQuests(count: number = 1): void {
+    const stats = this.getStats();
+    stats.inProgressQuests = Math.max(0, (stats.inProgressQuests || 0) - count);
     fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
   }
 }

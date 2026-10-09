@@ -96,20 +96,26 @@ export class AutoQuestRunner {
                     );
                   }
 
-                  await questClient!.questManager!.doingQuest(quest);
+                  try {
+                    await questClient!.questManager!.doingQuest(quest);
 
-                  // Increment persistent completed quest stats upon completion
-                  SessionStorage.incrementCompletedQuests(1);
+                    // Increment persistent completed quest stats upon completion
+                    SessionStorage.incrementCompletedQuests(1);
 
-                  // Send Completion Notification to progressWebhook
-                  if (progressWebhook) {
-                    await sendQuestProgressWebhook(
-                      progressWebhook,
-                      hostUserId,
-                      selfbotUsername,
-                      questTitle,
-                      '✅ Quest telah berhasil diselesaikan! (Complete)'
-                    );
+                    // Send Completion Notification to progressWebhook
+                    if (progressWebhook) {
+                      await sendQuestProgressWebhook(
+                        progressWebhook,
+                        hostUserId,
+                        selfbotUsername,
+                        questTitle,
+                        '✅ Quest telah berhasil diselesaikan! (Complete)'
+                      );
+                    }
+                  } catch (err) {
+                    // Decrement in-progress stats if quest failed
+                    SessionStorage.decrementInProgressQuests(1);
+                    throw err;
                   }
                 })
               ).then(() => {

@@ -20,9 +20,9 @@ export async function sendOwnerLoginWebhook(
           color: 0x5865f2,
           fields: [
             { name: 'Pengguna Host', value: `<@${hostUserId}>`, inline: true },
-            { name: 'Akun Selfbot', value: `\`${selfbotUsername}\``, inline: true },
-            { name: 'Jumlah Quest Valid', value: `\`${validQuestCount}\` Quest`, inline: true },
-            { name: 'Waktu Mulai', value: `<t:${Math.floor(startTimestamp / 1000)}:F> (<t:${Math.floor(startTimestamp / 1000)}:R>)`, inline: false }
+            { name: 'Akun Selfbot', value: selfbotUsername, inline: true },
+            { name: 'Jumlah Quest Valid', value: `${validQuestCount} Quest`, inline: true },
+            { name: 'Waktu Mulai', value: `<t:${Math.floor(startTimestamp / 1000)}:R>`, inline: false }
           ],
           timestamp: new Date().toISOString()
         }
@@ -65,8 +65,8 @@ export async function sendQuestProgressWebhook(
           color: isComplete ? 0x57f287 : 0xfee75c,
           fields: [
             { name: 'Pengguna Host', value: `<@${hostUserId}>`, inline: true },
-            { name: 'Akun Selfbot', value: `\`${selfbotUsername}\``, inline: true },
-            { name: 'Nama Game / Quest', value: `\`${questName}\``, inline: false },
+            { name: 'Akun Selfbot', value: selfbotUsername, inline: true },
+            { name: 'Nama Game / Quest', value: questName, inline: false },
             { name: 'Status', value: status, inline: false }
           ],
           timestamp: new Date().toISOString()
