@@ -18,7 +18,7 @@ async function runTests() {
   console.log('✅ /set, /desc, and /tos slash commands verified.');
 
   // Test 2: Set Panel ContainerV2 Structure & Multi-Language
-  console.log('Test 2: Set Panel ContainerV2 with Quest Counters & Last Update Timestamp...');
+  console.log('Test 2: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');
   const setContainerID = getSetContainer('id');
   const setContainerEN = getSetContainer('en');
 
@@ -29,11 +29,12 @@ async function runTests() {
   assert.ok(setJsonID.components[2].content.includes('Completed: **0 Quest**'));
   assert.ok(setJsonID.components[2].content.includes('In-Progress: **0 Quest**'));
   assert.ok(setJsonID.components[2].content.includes('• Last Update: <t:'));
+  assert.ok(setJsonID.components[2].content.endsWith(':R>'));
 
   // Verify presence of ButtonRow and SelectMenuRow
   assert.strictEqual(setJsonID.components[4].type, ComponentType.ActionRow); // Button Row
   assert.strictEqual(setJsonID.components[5].type, ComponentType.ActionRow); // Select Menu Row
-  console.log('✅ Set Panel ContainerV2 with Last Update timestamp verified.');
+  console.log('✅ Set Panel ContainerV2 with relative Last Update timestamp verified.');
 
   // Test 3: Multilingual Description & ToS Container
   console.log('Test 3: Multilingual ToS ContainerV2...');
