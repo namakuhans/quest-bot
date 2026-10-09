@@ -87,7 +87,7 @@ export const tosCommand = {
   async execute(interaction: ChatInputCommandInteraction) {
     const containerData = getTosContainer('id');
 
-    const rest = new REST().setToken(interaction.client.token);
+    const rest = new REST({ timeout: 60000, retries: 5 }).setToken(interaction.client.token);
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
       {

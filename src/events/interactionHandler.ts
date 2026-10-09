@@ -107,11 +107,12 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
 }
 
 export async function handleSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
+  const rest = new REST({ timeout: 60000, retries: 5 }).setToken(interaction.client.token);
+
   if (interaction.customId === 'set_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getSetContainer(selectedLang);
 
-    const rest = new REST().setToken(interaction.client.token);
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
       {
@@ -128,7 +129,6 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getFeatsContainer(selectedLang);
 
-    const rest = new REST().setToken(interaction.client.token);
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
       {
@@ -145,7 +145,6 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getTosContainer(selectedLang);
 
-    const rest = new REST().setToken(interaction.client.token);
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
       {
@@ -163,7 +162,6 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     const fileInfo = getAttachmentFile();
     const containerData = getHowContainer(selectedLang, fileInfo.fileName);
 
-    const rest = new REST().setToken(interaction.client.token);
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
       {

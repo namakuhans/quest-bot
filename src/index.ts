@@ -22,7 +22,11 @@ if (!token) {
 }
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [GatewayIntentBits.Guilds],
+  rest: {
+    timeout: 60000,
+    retries: 5
+  }
 });
 
 client.once('ready', async () => {
@@ -30,7 +34,7 @@ client.once('ready', async () => {
 
   // Register commands
   if (clientId) {
-    const rest = new REST({ version: '10' }).setToken(token);
+    const rest = new REST({ timeout: 60000, retries: 5 }).setToken(token);
     try {
       console.log('Registering slash commands...');
       await rest.put(Routes.applicationCommands(clientId), {

@@ -132,7 +132,7 @@ export const howCommand = {
       ];
     }
 
-    const rest = new REST().setToken(interaction.client.token);
+    const rest = new REST({ timeout: 60000, retries: 5 }).setToken(interaction.client.token);
 
     if (filesPayload.length > 0) {
       await rest.post(
