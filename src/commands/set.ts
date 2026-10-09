@@ -3,12 +3,86 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   SlashCommandBuilder,
   REST,
   Routes,
   InteractionResponseType
 } from 'discord.js';
 import { buildContainerV2 } from '../utils/container.js';
+import { SessionStorage } from '../services/sessionStore.js';
+
+export const setTexts = {
+  id: {
+    header: '🎮 Panel Layanan Auto Quest Discord',
+    summary: 'Sistem otomatisasi resmi untuk menyelesaikan Quest Discord aktif secara efisien dan aman.',
+    statsTitle: '📊 Statistik Quest',
+    buttonLabel: '🔑 Otentikasi Akun & Mulai Auto Quest',
+    selectPlaceholder: 'Pilih Bahasa / Select Language'
+  },
+  en: {
+    header: '🎮 Discord Auto Quest Service Panel',
+    summary: 'Official automation system to complete active Discord Quests efficiently and securely.',
+    statsTitle: '📊 Quest Statistics',
+    buttonLabel: '🔑 Authenticate Account & Start Auto Quest',
+    selectPlaceholder: 'Select Language / Pilih Bahasa'
+  }
+};
+
+export function getSetContainer(lang: 'id' | 'en') {
+  const sessions = SessionStorage.getSessions();
+  const completedCount = sessions.filter((s) => s.lastStatus === 'SUCCESS').length;
+  const inProgressCount = sessions.filter((s) => !s.lastStatus || s.lastStatus.startsWith('RUNNING') || s.lastStatus === 'IN_PROGRESS').length;
+
+  const data = setTexts[lang];
+
+  const loginButton = new ButtonBuilder()
+    .setCustomId('open_login_modal')
+    .setLabel(data.buttonLabel)
+    .setStyle(ButtonStyle.Primary);
+
+  const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(loginButton);
+
+  const selectMenu = new StringSelectMenuBuilder()
+    .setCustomId('set_language_select')
+    .setPlaceholder(data.selectPlaceholder)
+    .addOptions(
+      new StringSelectMenuOptionBuilder()
+        .setLabel('Bahasa Indonesia')
+        .setValue('id')
+        .setDescription('Tampilkan panel dalam Bahasa Indonesia')
+        .setEmoji('🇮🇩')
+        .setDefault(lang === 'id'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('English')
+        .setValue('en')
+        .setDescription('Display panel in English')
+        .setEmoji('🇺🇸')
+        .setDefault(lang === 'en')
+    );
+
+  const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+
+  const statsContent = lang === 'id'
+    ? `• **Quest Selesai (Completed)**: \`${completedCount}\` quest\n• **Quest Sedang Diproses (In-Progress)**: \`${inProgressCount}\` quest`
+    : `• **Completed Quests**: \`${completedCount}\` quests\n• **In-Progress Quests**: \`${inProgressCount}\` quests`;
+
+  return buildContainerV2({
+    accentColor: 0x5865f2,
+    sections: [
+      {
+        title: data.header,
+        content: data.summary
+      },
+      {
+        title: data.statsTitle,
+        content: statsContent
+      }
+    ],
+    actionRows: [buttonRow, selectRow]
+  });
+}
 
 export const setCommand = {
   data: new SlashCommandBuilder()
@@ -16,34 +90,7 @@ export const setCommand = {
     .setDescription('Pasang Panel Login Auto Quest Discord (Owner Only)'),
 
   async execute(interaction: ChatInputCommandInteraction) {
-    const loginButton = new ButtonBuilder()
-      .setCustomId('open_login_modal')
-      .setLabel('🔑 Otentikasi Akun & Mulai Auto Quest')
-      .setStyle(ButtonStyle.Primary);
-
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(loginButton);
-
-    const containerData = buildContainerV2({
-      accentColor: 0x5865f2,
-      sections: [
-        {
-          title: '🎮 Panel Layanan Auto Quest Discord',
-          content: 'Sistem otomatisasi resmi untuk menyelesaikan Quest Discord aktif secara efisien dan aman.'
-        },
-        {
-          title: '📌 Panduan Penggunaan',
-          content:
-'1. Klik tombol **Otentikasi Akun** di bawah ini.\n' +
-'2. Masukkan token otorisasi akun Discord Anda.\n' +
-'3. *(Opsional)* Cantumkan URL Webhook untuk notifikasi hasil quest.'
-        },
-        {
-          title: '🔒 Keamanan & Kebijakan',
-          content: '• Kredensial diproses dengan enkripsi AES-256 dan tidak disimpan secara permanen.\n• Proses quest langsung berjalan secara otomatis setelah otentikasi.'
-        }
-      ],
-      actionRows: [row]
-    });
+    const containerData = getSetContainer('id');
 
     const rest = new REST().setToken(interaction.client.token);
     await rest.post(

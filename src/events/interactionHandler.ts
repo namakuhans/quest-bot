@@ -12,6 +12,7 @@ import {
 } from 'discord.js';
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
+import { getSetContainer } from '../commands/set.js';
 import { getDescContainer } from '../commands/desc.js';
 import { getTosContainer } from '../commands/tos.js';
 
@@ -58,7 +59,8 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
       userId: interaction.user.id,
       token,
       webhookUrl,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      lastStatus: 'IN_PROGRESS'
     });
 
     // Trigger auto quest workflow asynchronously passing host user ID
@@ -104,7 +106,24 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
 }
 
 export async function handleSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
-  if (interaction.customId === 'desc_language_select') {
+  if (interaction.customId === 'set_language_select') {
+    const selectedLang = interaction.values[0] as 'id' | 'en';
+    const containerData = getSetContainer(selectedLang);
+
+    const rest = new REST().setToken(interaction.client.token);
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: InteractionResponseType.UpdateMessage,
+          data: {
+            flags: containerData.flags,
+            components: containerData.components.map((c) => c.toJSON())
+          }
+        }
+      }
+    );
+  } else if (interaction.customId === 'desc_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getDescContainer(selectedLang);
 
