@@ -13,7 +13,7 @@ import {
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
 import { getSetContainer } from '../commands/set.js';
-import { getDescContainer } from '../commands/desc.js';
+import { getFeatsContainer } from '../commands/feats.js';
 import { getTosContainer } from '../commands/tos.js';
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
@@ -123,9 +123,9 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
         }
       }
     );
-  } else if (interaction.customId === 'desc_language_select') {
+  } else if (interaction.customId === 'feats_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
-    const containerData = getDescContainer(selectedLang);
+    const containerData = getFeatsContainer(selectedLang);
 
     const rest = new REST().setToken(interaction.client.token);
     await rest.post(

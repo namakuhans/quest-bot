@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, REST, Routes, Interaction } from 'discord.js';
 import dotenv from 'dotenv';
 import { setCommand } from './commands/set.js';
-import { descCommand } from './commands/desc.js';
+import { featsCommand } from './commands/feats.js';
 import { tosCommand } from './commands/tos.js';
 import {
   handleButtonInteraction,
@@ -35,7 +35,7 @@ client.once('ready', async () => {
       await rest.put(Routes.applicationCommands(clientId), {
         body: [
           setCommand.data.toJSON(),
-          descCommand.data.toJSON(),
+          featsCommand.data.toJSON(),
           tosCommand.data.toJSON()
         ]
       });
@@ -61,8 +61,8 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 
       if (interaction.commandName === 'set') {
         await setCommand.execute(interaction);
-      } else if (interaction.commandName === 'desc') {
-        await descCommand.execute(interaction);
+      } else if (interaction.commandName === 'feats') {
+        await featsCommand.execute(interaction);
       } else if (interaction.commandName === 'tos') {
         await tosCommand.execute(interaction);
       }
