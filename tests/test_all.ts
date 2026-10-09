@@ -26,12 +26,13 @@ async function runTests() {
   assert.strictEqual(setContainerEN.flags, MessageFlags.IsComponentsV2);
   const setJsonID = setContainerID.components[0].toJSON();
   assert.ok(setJsonID.components[0].content.includes(setTexts.id.header));
-  assert.ok(setJsonID.components[2].content.includes(setTexts.id.statsTitle));
+  assert.ok(setJsonID.components[2].content.includes('Completed: **0 Quest**'));
+  assert.ok(setJsonID.components[2].content.includes('In-Progress: **0 Quest**'));
 
   // Verify presence of ButtonRow and SelectMenuRow
   assert.strictEqual(setJsonID.components[4].type, ComponentType.ActionRow); // Button Row
   assert.strictEqual(setJsonID.components[5].type, ComponentType.ActionRow); // Select Menu Row
-  console.log('✅ Set Panel ContainerV2 with counters and language select menu verified.');
+  console.log('✅ Set Panel ContainerV2 with simplified counters and language select menu verified.');
 
   // Test 3: Multilingual Description & ToS Container
   console.log('Test 3: Multilingual ToS ContainerV2...');

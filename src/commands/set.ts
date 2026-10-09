@@ -65,8 +65,8 @@ export function getSetContainer(lang: 'id' | 'en') {
   const selectRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 
   const statsContent = lang === 'id'
-    ? `• **Quest Selesai (Completed)**: \`${completedCount}\` quest\n• **Quest Sedang Diproses (In-Progress)**: \`${inProgressCount}\` quest`
-    : `• **Completed Quests**: \`${completedCount}\` quests\n• **In-Progress Quests**: \`${inProgressCount}\` quests`;
+    ? `• Completed: **${completedCount} Quest**\n• In-Progress: **${inProgressCount} Quest**`
+    : `• Completed: **${completedCount} Quests**\n• In-Progress: **${inProgressCount} Quests**`;
 
   return buildContainerV2({
     accentColor: 0x5865f2,
