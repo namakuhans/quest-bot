@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ComponentType } from 'discord.js';
+import { ComponentType, MessageFlags } from 'discord.js';
 import { descTexts, getDescContainer } from '../src/commands/desc.js';
 import { buildContainerV2 } from '../src/utils/container.js';
 import { SessionStorage } from '../src/services/sessionStore.js';
@@ -8,28 +8,30 @@ import { sendWebhookNotification } from '../src/services/webhook.js';
 async function runTests() {
   console.log('--- Running ContainerV2 & Logic Tests ---');
 
-  // Test 1: ContainerV2 Payload Structure
-  console.log('Test 1: ContainerV2 payload structure verification...');
+  // Test 1: ContainerV2 Payload Structure and MessageFlags
+  console.log('Test 1: ContainerV2 payload structure & MessageFlags verification...');
   const testContainer = buildContainerV2({
     accentColor: 0x5865f2,
     content: 'Test content inside ContainerV2'
   });
 
-  assert.strictEqual(testContainer[0].type, ComponentType.Container); // 17
-  assert.strictEqual(testContainer[0].accent_color, 0x5865f2);
-  assert.strictEqual(testContainer[0].components[0].type, ComponentType.TextDisplay); // 10
-  assert.strictEqual(testContainer[0].components[0].content, 'Test content inside ContainerV2');
-  console.log('✅ ContainerV2 payload structure correctly generated.');
+  assert.strictEqual(testContainer.flags, MessageFlags.IsComponentsV2); // 32768
+  const containerJson = testContainer.components[0].toJSON();
+  assert.strictEqual(containerJson.type, ComponentType.Container); // 17
+  assert.strictEqual(containerJson.accent_color, 0x5865f2);
+  assert.strictEqual(containerJson.components[0].type, ComponentType.TextDisplay); // 10
+  assert.strictEqual(containerJson.components[0].content, 'Test content inside ContainerV2');
+  console.log('✅ ContainerV2 payload structure & MessageFlags.IsComponentsV2 correctly generated.');
 
   // Test 2: Multilingual Description Container
   console.log('Test 2: Multilingual Description ContainerV2...');
   const containerID = getDescContainer('id');
   const containerEN = getDescContainer('en');
 
-  assert.strictEqual(containerID[0].type, ComponentType.Container);
-  assert.strictEqual(containerEN[0].type, ComponentType.Container);
-  assert.ok(containerID[0].components[0].content.includes(descTexts.id.title));
-  assert.ok(containerEN[0].components[0].content.includes(descTexts.en.title));
+  assert.strictEqual(containerID.flags, MessageFlags.IsComponentsV2);
+  assert.strictEqual(containerEN.flags, MessageFlags.IsComponentsV2);
+  assert.ok(containerID.components[0].toJSON().components[0].content.includes(descTexts.id.title));
+  assert.ok(containerEN.components[0].toJSON().components[0].content.includes(descTexts.en.title));
   console.log('✅ ID and EN ContainerV2 components verified.');
 
   // Test 3: JSON SessionStorage

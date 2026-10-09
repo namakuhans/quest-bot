@@ -39,8 +39,9 @@ export class AutoQuestRunner {
         questClient = new ClientQuest(token);
 
         // Listen on WebSocketManager dispatch events for GatewayDispatchEvents.Ready
-        questClient.websocketManager.on(WebSocketShardEvents.Dispatch, async (payload: GatewayDispatchPayload) => {
-          if (payload.t === GatewayDispatchEvents.Ready) {
+        questClient.websocketManager.on(WebSocketShardEvents.Dispatch, async (event: any) => {
+          const payload: GatewayDispatchPayload = event?.data ?? event;
+          if (payload && payload.t === GatewayDispatchEvents.Ready) {
             const username = `@${payload.d.user.username}`;
             try {
               await questClient!.fetchQuests(false);

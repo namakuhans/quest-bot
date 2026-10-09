@@ -105,7 +105,7 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
 export async function handleSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
   if (interaction.customId === 'desc_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
-    const containerComponents = getDescContainer(selectedLang);
+    const containerData = getDescContainer(selectedLang);
 
     const rest = new REST().setToken(interaction.client.token);
     await rest.post(
@@ -114,7 +114,8 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
         body: {
           type: InteractionResponseType.UpdateMessage,
           data: {
-            components: containerComponents
+            flags: containerData.flags,
+            components: containerData.components.map((c) => c.toJSON())
           }
         }
       }

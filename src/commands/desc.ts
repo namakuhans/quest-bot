@@ -73,7 +73,7 @@ export const descCommand = {
     .setDescription('Tampilkan container deskripsi & fitur bot (Owner Only)'),
 
   async execute(interaction: ChatInputCommandInteraction) {
-    const containerComponents = getDescContainer('id');
+    const containerData = getDescContainer('id');
 
     const rest = new REST().setToken(interaction.client.token);
     await rest.post(
@@ -82,7 +82,8 @@ export const descCommand = {
         body: {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            components: containerComponents
+            flags: containerData.flags,
+            components: containerData.components.map((c) => c.toJSON())
           }
         }
       }

@@ -45,8 +45,8 @@ client.on('interactionCreate', async (interaction: Interaction) => {
   try {
     // Handle Slash Commands
     if (interaction.isChatInputCommand()) {
-      // Owner restriction check
-      if (ownerId && interaction.user.id !== ownerId) {
+      // Strict Owner restriction check
+      if (!ownerId || interaction.user.id !== ownerId) {
         await interaction.reply({
           content: '❌ Command ini hanya dapat digunakan oleh Bot Owner.',
           ephemeral: true

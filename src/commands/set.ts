@@ -34,7 +34,7 @@ Klik tombol di bawah ini untuk menginput token Discord Anda dan memulainya secar
 • Webhook opsional dapat dimasukkan jika Anda menginginkan notifikasi setelah quest selesai.
 • Pastikan akun Anda tidak berpindah sandi saat proses berlangsung.`;
 
-    const containerComponents = buildContainerV2({
+    const containerData = buildContainerV2({
       accentColor: 0x5865f2,
       content: textContent,
       actionRows: [row]
@@ -47,7 +47,8 @@ Klik tombol di bawah ini untuk menginput token Discord Anda dan memulainya secar
         body: {
           type: InteractionResponseType.ChannelMessageWithSource,
           data: {
-            components: containerComponents
+            flags: containerData.flags,
+            components: containerData.components.map((c) => c.toJSON())
           }
         }
       }
