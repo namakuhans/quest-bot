@@ -18,25 +18,30 @@ export const setCommand = {
   async execute(interaction: ChatInputCommandInteraction) {
     const loginButton = new ButtonBuilder()
       .setCustomId('open_login_modal')
-      .setLabel('🔑 Input Token & Login Auto Quest')
+      .setLabel('🔑 Otentikasi Akun & Mulai Auto Quest')
       .setStyle(ButtonStyle.Primary);
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(loginButton);
 
-    const textContent =
-`# 🎮 AUTO QUEST DISCORD BOT PANEL
-***
-Selamat datang di Panel Resmi Auto Quest Discord!
-Klik tombol di bawah ini untuk menginput token Discord Anda dan memulainya secara otomatis.
-
-**Catatan Keamanan & Informasi:**
-• Token Anda hanya digunakan untuk memproses quest yang sedang aktif dan tidak disimpan secara permanen.
-• Webhook opsional dapat dimasukkan jika Anda menginginkan notifikasi setelah quest selesai.
-• Pastikan akun Anda tidak berpindah sandi saat proses berlangsung.`;
-
     const containerData = buildContainerV2({
       accentColor: 0x5865f2,
-      content: textContent,
+      sections: [
+        {
+          title: '🎮 Panel Layanan Auto Quest Discord',
+          content: 'Sistem otomatisasi resmi untuk menyelesaikan Quest Discord aktif secara efisien dan aman.'
+        },
+        {
+          title: '📌 Panduan Penggunaan',
+          content:
+'1. Klik tombol **Otentikasi Akun** di bawah ini.\n' +
+'2. Masukkan token otorisasi akun Discord Anda.\n' +
+'3. *(Opsional)* Cantumkan URL Webhook untuk notifikasi hasil quest.'
+        },
+        {
+          title: '🔒 Keamanan & Kebijakan',
+          content: '• Kredensial diproses dengan enkripsi AES-256 dan tidak disimpan secara permanen.\n• Proses quest langsung berjalan secara otomatis setelah otentikasi.'
+        }
+      ],
       actionRows: [row]
     });
 

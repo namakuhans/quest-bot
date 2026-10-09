@@ -8,11 +8,14 @@ import { sendWebhookNotification } from '../src/services/webhook.js';
 async function runTests() {
   console.log('--- Running ContainerV2 & Logic Tests ---');
 
-  // Test 1: ContainerV2 Payload Structure and MessageFlags
-  console.log('Test 1: ContainerV2 payload structure & MessageFlags verification...');
+  // Test 1: ContainerV2 Payload Structure with Separators and MessageFlags
+  console.log('Test 1: ContainerV2 payload structure with Separators & MessageFlags...');
   const testContainer = buildContainerV2({
     accentColor: 0x5865f2,
-    content: 'Test content inside ContainerV2'
+    sections: [
+      { title: 'Section 1', content: 'Content 1' },
+      { title: 'Section 2', content: 'Content 2' }
+    ]
   });
 
   assert.strictEqual(testContainer.flags, MessageFlags.IsComponentsV2); // 32768
@@ -20,8 +23,9 @@ async function runTests() {
   assert.strictEqual(containerJson.type, ComponentType.Container); // 17
   assert.strictEqual(containerJson.accent_color, 0x5865f2);
   assert.strictEqual(containerJson.components[0].type, ComponentType.TextDisplay); // 10
-  assert.strictEqual(containerJson.components[0].content, 'Test content inside ContainerV2');
-  console.log('✅ ContainerV2 payload structure & MessageFlags.IsComponentsV2 correctly generated.');
+  assert.strictEqual(containerJson.components[1].type, ComponentType.Separator); // 14
+  assert.strictEqual(containerJson.components[2].type, ComponentType.TextDisplay); // 10
+  console.log('✅ ContainerV2 payload structure with Separator components verified.');
 
   // Test 2: Multilingual Description Container
   console.log('Test 2: Multilingual Description ContainerV2...');
@@ -30,8 +34,8 @@ async function runTests() {
 
   assert.strictEqual(containerID.flags, MessageFlags.IsComponentsV2);
   assert.strictEqual(containerEN.flags, MessageFlags.IsComponentsV2);
-  assert.ok(containerID.components[0].toJSON().components[0].content.includes(descTexts.id.title));
-  assert.ok(containerEN.components[0].toJSON().components[0].content.includes(descTexts.en.title));
+  assert.ok(containerID.components[0].toJSON().components[0].content.includes(descTexts.id.header));
+  assert.ok(containerEN.components[0].toJSON().components[0].content.includes(descTexts.en.header));
   console.log('✅ ID and EN ContainerV2 components verified.');
 
   // Test 3: JSON SessionStorage

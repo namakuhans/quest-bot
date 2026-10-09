@@ -12,28 +12,28 @@ import { buildContainerV2 } from '../utils/container.js';
 
 export const descTexts = {
   id: {
-    title: '✨ Latar Belakang & Fitur Auto Quest Bot',
-    description:
-`**Deskripsi Singkat:**
-Bot ini didesain untuk membantu Anda menyelesaikan berbagai Quest Discord secara otomatis dan efisien tanpa perlu memainkan game atau menonton video secara manual.
-
-**Fitur Utama:**
-• 🚀 **Otomatisasi Penuh**: Otomatis mendaftar dan menjalankan quest yang tersedia.
-• 📹 **Video & Desktop Spoofing**: Mendukung quest tipe WATCH_VIDEO, PLAY_ON_DESKTOP, WATCH_VIDEO_ON_MOBILE, dll.
-• 🔔 **Notifikasi Webhook**: Kirim laporan penyelesaian quest langsung ke channel Discord Anda via Webhook.
-• 🔒 **Sistem Login Aman**: Panel interaktif berbasis Modal Login resmi.`
+    header: '✨ Ringkasan Sistem Discord Auto Quest',
+    summary: 'Platform otomatisasi berbasis Discord.js untuk menyelesaikan Quest aktif tanpa perlu eksekusi game atau video secara manual.',
+    featuresTitle: '🚀 Fitur Utama',
+    featuresContent:
+'• **Multi-Task Spoofing**: Mendukung quest video, gameplay desktop, serta aktivitas mobile.\n' +
+'• **Integrasi Webhook**: Notifikasi instan ke channel Anda saat quest selesai.\n' +
+'• **Enkripsi Sesi**: Kredensial akun terlindungi dengan enkripsi standar industri.\n' +
+'• **Antarmuka ContainerV2**: Tampilan panel yang bersih, responsif, dan terstruktur.',
+    footerTitle: '🌐 Bahasa',
+    footerContent: 'Pilih bahasa antarmuka menggunakan menu di bawah.'
   },
   en: {
-    title: '✨ Auto Quest Bot Overview & Features',
-    description:
-`**Brief Description:**
-This bot is designed to automatically and efficiently complete active Discord Quests for you without manual gameplay or video watching.
-
-**Key Features:**
-• 🚀 **Full Automation**: Automatically enrolls and completes active quests.
-• 📹 **Video & Desktop Spoofing**: Supports task types such as WATCH_VIDEO, PLAY_ON_DESKTOP, WATCH_VIDEO_ON_MOBILE, etc.
-• 🔔 **Webhook Notifications**: Receive quest completion reports directly in your Discord channel via Webhook.
-• 🔒 **Secure Login System**: Interactive panel powered by official Modal Login.`
+    header: '✨ Discord Auto Quest System Overview',
+    summary: 'A Discord.js-powered automation platform to efficiently complete active Discord Quests without manual gameplay or video watching.',
+    featuresTitle: '🚀 Key Features',
+    featuresContent:
+'• **Multi-Task Spoofing**: Supports video quests, desktop gameplay, and mobile activities.\n' +
+'• **Webhook Integration**: Instant completion alerts sent straight to your channel.\n' +
+'• **Session Encryption**: Account tokens are secured using industry-standard encryption.\n' +
+'• **ContainerV2 Interface**: Clean, responsive, and structured panel layout.',
+    footerTitle: '🌐 Language',
+    footerContent: 'Select your preferred interface language from the menu below.'
   }
 };
 
@@ -57,12 +57,24 @@ export function getDescContainer(lang: 'id' | 'en') {
     );
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-  const langData = descTexts[lang];
-  const content = `# ${langData.title}\n***\n${langData.description}`;
+  const data = descTexts[lang];
 
   return buildContainerV2({
-    accentColor: 0x001000,
-    content,
+    accentColor: 0x5865f2,
+    sections: [
+      {
+        title: data.header,
+        content: data.summary
+      },
+      {
+        title: data.featuresTitle,
+        content: data.featuresContent
+      },
+      {
+        title: data.footerTitle,
+        content: data.footerContent
+      }
+    ],
     actionRows: [row]
   });
 }
