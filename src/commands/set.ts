@@ -15,16 +15,22 @@ import { SessionStorage } from '../services/sessionStore.js';
 
 export const setTexts = {
   id: {
-    header: '🎮 Panel Layanan Auto Quest Discord',
-    summary: 'Sistem otomatisasi resmi untuk menyelesaikan Quest Discord aktif secara efisien dan aman.',
-    statsTitle: '📊 Statistik Quest',
+    header: '🎮 Panel Otomatisasi Discord Auto Quest',
+    summary:
+'Selamat datang di sistem otentikasi resmi Discord Auto Quest!\n\n' +
+'Layanan ini dirancang khusus untuk mempermudah Anda dalam mengklaim dan menyelesaikan seluruh Quest Discord yang sedang berlangsung secara otomatis. Tanpa perlu menginstal atau memainkan game secara manual, sistem kami akan memproses tugas quest seperti streaming video, simulasi gameplay desktop, serta aktivitas khusus secara aman di latar belakang.\n\n' +
+'Silakan klik tombol **Otentikasi Akun** di bawah ini untuk menginput token akun Anda. Anda juga dapat mencantumkan Webhook URL opsional untuk menerima laporan otomatis saat quest berhasil diselesaikan.',
+    statsTitle: '📊 Statistik Layanan Saat Ini',
     buttonLabel: '🔑 Otentikasi Akun & Mulai Auto Quest',
     selectPlaceholder: 'Pilih Bahasa / Select Language'
   },
   en: {
-    header: '🎮 Discord Auto Quest Service Panel',
-    summary: 'Official automation system to complete active Discord Quests efficiently and securely.',
-    statsTitle: '📊 Quest Statistics',
+    header: '🎮 Discord Auto Quest Automation Panel',
+    summary:
+'Welcome to the official Discord Auto Quest authentication portal!\n\n' +
+'This service is designed to seamlessly process and complete all active Discord Quests on your behalf. Without requiring manual gameplay or video watching, our automated system handles quest tasks including video streaming, desktop gameplay simulation, and special activity progress securely in the background.\n\n' +
+'Click the **Authenticate Account** button below to enter your account token. You may also provide an optional Webhook URL to receive automated real-time completion reports.',
+    statsTitle: '📊 Current Service Statistics',
     buttonLabel: '🔑 Authenticate Account & Start Auto Quest',
     selectPlaceholder: 'Select Language / Pilih Bahasa'
   }
