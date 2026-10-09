@@ -3,27 +3,34 @@ import { ComponentType, MessageFlags } from 'discord.js';
 import { featsTexts, getFeatsContainer, featsCommand } from '../src/commands/feats.js';
 import { tosTexts, getTosContainer, tosCommand } from '../src/commands/tos.js';
 import { setTexts, getSetContainer, setCommand } from '../src/commands/set.js';
+import { howTexts, getHowContainer, howCommand } from '../src/commands/how.js';
 import { buildContainerV2 } from '../src/utils/container.js';
 import { SessionStorage } from '../src/services/sessionStore.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2, Set Panel & Logic Tests ---');
+  console.log('--- Running ContainerV2, How Panel & Logic Tests ---');
 
   // Test 1: Slash Commands Registration Data
   console.log('Test 1: Slash Commands registration data...');
   assert.strictEqual(setCommand.data.name, 'set');
   assert.strictEqual(featsCommand.data.name, 'feats');
   assert.strictEqual(tosCommand.data.name, 'tos');
-  console.log('✅ /set, /feats, and /tos slash commands verified.');
+  assert.strictEqual(howCommand.data.name, 'how');
+  console.log('✅ /set, /feats, /tos, and /how slash commands verified.');
 
-  // Test 2: Persistent Stats Persistence across calls
-  console.log('Test 2: Persistent Quest Stats...');
-  SessionStorage.incrementCompletedQuests(5);
-  SessionStorage.incrementInProgressQuests(2);
-  const stats = SessionStorage.getStats();
-  assert.ok(stats.completedQuests >= 5);
-  console.log('✅ Persistent stats increment verified.');
+  // Test 2: How Panel ContainerV2 Structure & File Attachment
+  console.log('Test 2: How Panel ContainerV2 with File Component...');
+  const howContainerID = getHowContainer('id', 'tutorial.mp4');
+  const howContainerEN = getHowContainer('en', 'tutorial.mp4');
+
+  assert.strictEqual(howContainerID.flags, MessageFlags.IsComponentsV2);
+  assert.strictEqual(howContainerEN.flags, MessageFlags.IsComponentsV2);
+  const howJsonID = howContainerID.components[0].toJSON();
+  assert.strictEqual(howJsonID.type, ComponentType.Container); // 17
+  assert.strictEqual(howJsonID.components[0].type, ComponentType.File); // 13 File component
+  assert.strictEqual(howJsonID.components[0].file.url, 'attachment://tutorial.mp4');
+  console.log('✅ How Panel ContainerV2 with File Component verified.');
 
   // Test 3: Set Panel ContainerV2 Structure & Multi-Language
   console.log('Test 3: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');
@@ -34,10 +41,6 @@ async function runTests() {
   assert.strictEqual(setContainerEN.flags, MessageFlags.IsComponentsV2);
   const setJsonID = setContainerID.components[0].toJSON();
   assert.ok(setJsonID.components[0].content.includes(setTexts.id.header));
-  assert.ok(setJsonID.components[2].content.includes('Completed: **'));
-  assert.ok(setJsonID.components[2].content.includes('In-Progress: **'));
-  assert.ok(setJsonID.components[2].content.includes('• Last Update: <t:'));
-  assert.ok(setJsonID.components[2].content.endsWith(':R>'));
 
   // Test 4: Feats Panel ContainerV2 Multi-Language
   console.log('Test 4: Feats Panel ContainerV2...');

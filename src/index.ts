@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { setCommand } from './commands/set.js';
 import { featsCommand } from './commands/feats.js';
 import { tosCommand } from './commands/tos.js';
+import { howCommand } from './commands/how.js';
 import {
   handleButtonInteraction,
   handleModalSubmit,
@@ -36,7 +37,8 @@ client.once('ready', async () => {
         body: [
           setCommand.data.toJSON(),
           featsCommand.data.toJSON(),
-          tosCommand.data.toJSON()
+          tosCommand.data.toJSON(),
+          howCommand.data.toJSON()
         ]
       });
       console.log('Successfully registered slash commands!');
@@ -65,6 +67,8 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         await featsCommand.execute(interaction);
       } else if (interaction.commandName === 'tos') {
         await tosCommand.execute(interaction);
+      } else if (interaction.commandName === 'how') {
+        await howCommand.execute(interaction);
       }
       return;
     }

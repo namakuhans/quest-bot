@@ -4,6 +4,7 @@ import {
   SeparatorBuilder,
   SeparatorSpacingSize,
   ActionRowBuilder,
+  FileBuilder,
   MessageFlags
 } from 'discord.js';
 
@@ -16,11 +17,23 @@ export function buildContainerV2(options: {
   accentColor?: number;
   sections: SectionBlock[];
   actionRows?: ActionRowBuilder<any>[];
+  attachmentUrl?: string;
 }) {
   const container = new ContainerBuilder();
 
   if (options.accentColor) {
     container.setAccentColor(options.accentColor);
+  }
+
+  // Add FileComponent if attachmentUrl is specified
+  if (options.attachmentUrl) {
+    const fileComponent = new FileBuilder().setURL(options.attachmentUrl);
+    container.addFileComponents(fileComponent);
+
+    const separator = new SeparatorBuilder()
+      .setSpacing(SeparatorSpacingSize.Large)
+      .setDivider(true);
+    container.addSeparatorComponents(separator);
   }
 
   options.sections.forEach((section, index) => {

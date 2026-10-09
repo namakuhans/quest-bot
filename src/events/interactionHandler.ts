@@ -15,6 +15,7 @@ import { SessionStorage } from '../services/sessionStore.js';
 import { getSetContainer } from '../commands/set.js';
 import { getFeatsContainer } from '../commands/feats.js';
 import { getTosContainer } from '../commands/tos.js';
+import { getHowContainer } from '../commands/how.js';
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
   if (interaction.customId === 'open_login_modal') {
@@ -143,6 +144,23 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
   } else if (interaction.customId === 'tos_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getTosContainer(selectedLang);
+
+    const rest = new REST().setToken(interaction.client.token);
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: InteractionResponseType.UpdateMessage,
+          data: {
+            flags: containerData.flags,
+            components: containerData.components.map((c) => c.toJSON())
+          }
+        }
+      }
+    );
+  } else if (interaction.customId === 'how_language_select') {
+    const selectedLang = interaction.values[0] as 'id' | 'en';
+    const containerData = getHowContainer(selectedLang);
 
     const rest = new REST().setToken(interaction.client.token);
     await rest.post(
