@@ -61,8 +61,8 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
       createdAt: new Date().toISOString()
     });
 
-    // Trigger auto quest workflow asynchronously
-    AutoQuestRunner.runForUser(token, webhookUrl)
+    // Trigger auto quest workflow asynchronously passing host user ID
+    AutoQuestRunner.runForUser(interaction.user.id, token, webhookUrl)
       .then(async (result) => {
         if (result.success) {
           SessionStorage.saveSession({
@@ -75,7 +75,7 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
           });
 
           await interaction.followUp({
-            content: `✅ **Auto Quest Berhasil Dimulai!**\n• User: \`${result.username}\`\n• Quest Ditemukan: \`${result.questCount}\` quest sedang diproses di background.\n• Notifikasi: Laporan penyelesaian quest akan dikirimkan via Webhook.`,
+            content: `✅ **Auto Quest Berhasil Dimulai!**\n• User Host: <@${interaction.user.id}>\n• Akun Selfbot: \`${result.username}\`\n• Quest Ditemukan: \`${result.questCount}\` quest sedang diproses di background.\n• Notifikasi: Laporan penyelesaian quest akan dikirimkan via Webhook.`,
             ephemeral: true
           }).catch(() => {});
         } else {

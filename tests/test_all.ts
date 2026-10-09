@@ -5,10 +5,10 @@ import { tosTexts, getTosContainer, tosCommand } from '../src/commands/tos.js';
 import { setCommand } from '../src/commands/set.js';
 import { buildContainerV2 } from '../src/utils/container.js';
 import { SessionStorage } from '../src/services/sessionStore.js';
-import { sendWebhookNotification } from '../src/services/webhook.js';
+import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2, ToS & Logic Tests ---');
+  console.log('--- Running ContainerV2, Webhook & Logic Tests ---');
 
   // Test 1: Slash Commands Registration Data
   console.log('Test 1: Slash Commands registration data...');
@@ -65,11 +65,13 @@ async function runTests() {
   assert.strictEqual(sessionsAfterDelete.find((s) => s.userId === 'test_user_123'), undefined);
   console.log('✅ SessionStorage save and remove verified.');
 
-  // Test 5: Webhook format safety check
+  // Test 5: Webhook format safety check on invalid URL
   console.log('Test 5: Webhook safe handle on invalid URL...');
-  const invalidResult = await sendWebhookNotification('invalid-url', 'User#0000', 'Test Quest');
-  assert.strictEqual(invalidResult, false);
-  console.log('✅ Webhook invalid URL handling verified.');
+  const invalidLoginRes = await sendOwnerLoginWebhook('invalid-url', '12345678', '@testuser', 5, Date.now());
+  const invalidProgressRes = await sendQuestProgressWebhook('invalid-url', '12345678', '@testuser', 'Genshin Impact', 'Complete');
+  assert.strictEqual(invalidLoginRes, false);
+  assert.strictEqual(invalidProgressRes, false);
+  console.log('✅ Owner Login & Quest Progress webhook invalid URL handling verified.');
 
   console.log('--- All Tests Passed Successfully! ---');
 }
