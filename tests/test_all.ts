@@ -1,25 +1,38 @@
 import assert from 'assert';
-import { setCommand } from '../src/commands/set.js';
-import { descCommand, descTexts } from '../src/commands/desc.js';
+import { ComponentType } from 'discord.js';
+import { descTexts, getDescContainer } from '../src/commands/desc.js';
+import { buildContainerV2 } from '../src/utils/container.js';
 import { SessionStorage } from '../src/services/sessionStore.js';
 import { sendWebhookNotification } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running Tests ---');
+  console.log('--- Running ContainerV2 & Logic Tests ---');
 
-  // Test 1: Command Data Structures
-  console.log('Test 1: Slash Commands registration data...');
-  assert.strictEqual(setCommand.data.name, 'set');
-  assert.strictEqual(descCommand.data.name, 'desc');
-  console.log('✅ Slash command names verified.');
+  // Test 1: ContainerV2 Payload Structure
+  console.log('Test 1: ContainerV2 payload structure verification...');
+  const testContainer = buildContainerV2({
+    accentColor: 0x5865f2,
+    content: 'Test content inside ContainerV2'
+  });
 
-  // Test 2: Multilingual Description Texts
-  console.log('Test 2: Multilingual Texts...');
-  assert.ok(descTexts.id.title.length > 0);
-  assert.ok(descTexts.en.title.length > 0);
-  console.log('✅ ID and EN texts verified.');
+  assert.strictEqual(testContainer[0].type, ComponentType.Container); // 17
+  assert.strictEqual(testContainer[0].accent_color, 0x5865f2);
+  assert.strictEqual(testContainer[0].components[0].type, ComponentType.TextDisplay); // 10
+  assert.strictEqual(testContainer[0].components[0].content, 'Test content inside ContainerV2');
+  console.log('✅ ContainerV2 payload structure correctly generated.');
 
-  // Test 3: SessionStorage operations
+  // Test 2: Multilingual Description Container
+  console.log('Test 2: Multilingual Description ContainerV2...');
+  const containerID = getDescContainer('id');
+  const containerEN = getDescContainer('en');
+
+  assert.strictEqual(containerID[0].type, ComponentType.Container);
+  assert.strictEqual(containerEN[0].type, ComponentType.Container);
+  assert.ok(containerID[0].components[0].content.includes(descTexts.id.title));
+  assert.ok(containerEN[0].components[0].content.includes(descTexts.en.title));
+  console.log('✅ ID and EN ContainerV2 components verified.');
+
+  // Test 3: JSON SessionStorage
   console.log('Test 3: JSON SessionStorage...');
   const testUser = {
     userId: 'test_user_123',

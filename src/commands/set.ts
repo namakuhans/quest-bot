@@ -3,8 +3,12 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  SlashCommandBuilder
+  SlashCommandBuilder,
+  REST,
+  Routes,
+  InteractionResponseType
 } from 'discord.js';
+import { buildContainerV2 } from '../utils/container.js';
 
 export const setCommand = {
   data: new SlashCommandBuilder()
@@ -19,21 +23,34 @@ export const setCommand = {
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(loginButton);
 
-    const content =
+    const textContent =
 `# 🎮 AUTO QUEST DISCORD BOT PANEL
----
+***
 Selamat datang di Panel Resmi Auto Quest Discord!
 Klik tombol di bawah ini untuk menginput token Discord Anda dan memulainya secara otomatis.
 
 **Catatan Keamanan & Informasi:**
 • Token Anda hanya digunakan untuk memproses quest yang sedang aktif dan tidak disimpan secara permanen.
 • Webhook opsional dapat dimasukkan jika Anda menginginkan notifikasi setelah quest selesai.
-• Pastikan akun Anda tidak berpindah sandi saat proses berlangsung.
----`;
+• Pastikan akun Anda tidak berpindah sandi saat proses berlangsung.`;
 
-    await interaction.reply({
-      content,
-      components: [row]
+    const containerComponents = buildContainerV2({
+      accentColor: 0x5865f2,
+      content: textContent,
+      actionRows: [row]
     });
+
+    const rest = new REST().setToken(interaction.client.token);
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: InteractionResponseType.ChannelMessageWithSource,
+          data: {
+            components: containerComponents
+          }
+        }
+      }
+    );
   }
 };

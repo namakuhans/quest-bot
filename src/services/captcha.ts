@@ -1,7 +1,7 @@
-import { Constants } from './constants';
-import { CaptchaDataFromRequest } from './interface';
-import { YesCaptchaSolver } from './providers/yescaptcha';
-import { Utils } from './utils';
+import { Constants } from './constants.js';
+import { CaptchaDataFromRequest } from './interface.js';
+import { YesCaptchaSolver } from './providers/yescaptcha.js';
+import { Utils } from './utils.js';
 
 let yesCaptchaClient: YesCaptchaSolver | null = null;
 

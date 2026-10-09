@@ -1,4 +1,5 @@
-import { GatewayDispatchEvents } from 'discord-api-types/v10';
+import { GatewayDispatchEvents, GatewayDispatchPayload } from 'discord-api-types/v10';
+import { WebSocketShardEvents } from '@discordjs/ws';
 import { ClientQuest } from './client.js';
 import { sendWebhookNotification } from './webhook.js';
 
@@ -37,42 +38,45 @@ export class AutoQuestRunner {
       try {
         questClient = new ClientQuest(token);
 
-        questClient.once(GatewayDispatchEvents.Ready, async ({ data }) => {
-          const username = `@${data.user.username}`;
-          try {
-            await questClient!.fetchQuests(false);
-            const questsValid = questClient!.questManager!.filterQuestsValidToDo();
+        // Listen on WebSocketManager dispatch events for GatewayDispatchEvents.Ready
+        questClient.websocketManager.on(WebSocketShardEvents.Dispatch, async (payload: GatewayDispatchPayload) => {
+          if (payload.t === GatewayDispatchEvents.Ready) {
+            const username = `@${payload.d.user.username}`;
+            try {
+              await questClient!.fetchQuests(false);
+              const questsValid = questClient!.questManager!.filterQuestsValidToDo();
 
-            console.log(`[AutoQuest] Logged in as ${username}. Found ${questsValid.length} valid quests to complete.`);
+              console.log(`[AutoQuest] Logged in as ${username}. Found ${questsValid.length} valid quests to complete.`);
 
-            if (questsValid.length === 0) {
+              if (questsValid.length === 0) {
+                clearTimeout(timeout);
+                finish({ success: true, username, questCount: 0 });
+                return;
+              }
+
+              // Execute quests concurrently
+              await Promise.allSettled(
+                questsValid.map(async (quest: any) => {
+                  await questClient!.questManager!.doingQuest(quest);
+
+                  // If webhook is provided, notify on completion
+                  if (webhookUrl) {
+                    const questTitle = quest.config?.messages?.quest_name || 'Discord Quest';
+                    await sendWebhookNotification(webhookUrl, username, questTitle);
+                  }
+                })
+              );
+
               clearTimeout(timeout);
-              finish({ success: true, username, questCount: 0 });
-              return;
+              finish({
+                success: true,
+                username,
+                questCount: questsValid.length
+              });
+            } catch (err: any) {
+              clearTimeout(timeout);
+              finish({ success: false, username, error: err.message || 'Error processing quests' });
             }
-
-            // Execute quests concurrently
-            await Promise.allSettled(
-              questsValid.map(async (quest) => {
-                await questClient!.questManager!.doingQuest(quest);
-
-                // If webhook is provided, notify on completion
-                if (webhookUrl) {
-                  const questTitle = quest.config?.messages?.quest_name || 'Discord Quest';
-                  await sendWebhookNotification(webhookUrl, username, questTitle);
-                }
-              })
-            );
-
-            clearTimeout(timeout);
-            finish({
-              success: true,
-              username,
-              questCount: questsValid.length
-            });
-          } catch (err: any) {
-            clearTimeout(timeout);
-            finish({ success: false, username, error: err.message || 'Error processing quests' });
           }
         });
 

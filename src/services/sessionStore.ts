@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 export interface UserSession {
   userId: string;
@@ -10,7 +11,42 @@ export interface UserSession {
   lastStatus?: string;
 }
 
+interface EncryptedData {
+  iv: string;
+  authTag: string;
+  content: string;
+}
+
 const SESSIONS_FILE = path.join(process.cwd(), 'src', 'data', 'sessions.json');
+const ENCRYPTION_KEY = process.env.ENCRYPTION_SECRET
+  ? crypto.createHash('sha256').update(process.env.ENCRYPTION_SECRET).digest()
+  : crypto.createHash('sha256').update('discord-auto-quest-secure-key-default').digest();
+
+function encrypt(text: string): EncryptedData {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+
+  return {
+    iv: iv.toString('hex'),
+    authTag,
+    content: encrypted
+  };
+}
+
+function decrypt(encrypted: EncryptedData): string {
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    ENCRYPTION_KEY,
+    Buffer.from(encrypted.iv, 'hex')
+  );
+  decipher.setAuthTag(Buffer.from(encrypted.authTag, 'hex'));
+  let decrypted = decipher.update(encrypted.content, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
 
 export class SessionStorage {
   private static ensureFileExists() {
@@ -27,25 +63,59 @@ export class SessionStorage {
     this.ensureFileExists();
     try {
       const data = fs.readFileSync(SESSIONS_FILE, 'utf-8');
-      return JSON.parse(data) as UserSession[];
+      const encryptedSessions = JSON.parse(data) as any[];
+      return encryptedSessions.map((item) => {
+        if (item.encryptedToken) {
+          const decryptedToken = decrypt(item.encryptedToken);
+          return {
+            userId: item.userId,
+            token: decryptedToken,
+            webhookUrl: item.webhookUrl,
+            createdAt: item.createdAt,
+            lastRunAt: item.lastRunAt,
+            lastStatus: item.lastStatus
+          };
+        }
+        return item;
+      });
     } catch (e) {
       return [];
     }
   }
 
   public static saveSession(session: UserSession): void {
-    const sessions = this.getSessions();
-    const existingIndex = sessions.findIndex((s) => s.userId === session.userId);
+    const currentSessions = this.getSessions();
+    const existingIndex = currentSessions.findIndex((s) => s.userId === session.userId);
+
     if (existingIndex >= 0) {
-      sessions[existingIndex] = { ...sessions[existingIndex], ...session };
+      currentSessions[existingIndex] = { ...currentSessions[existingIndex], ...session };
     } else {
-      sessions.push(session);
+      currentSessions.push(session);
     }
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2), 'utf-8');
+
+    const encryptedPayload = currentSessions.map((s) => ({
+      userId: s.userId,
+      encryptedToken: encrypt(s.token),
+      webhookUrl: s.webhookUrl,
+      createdAt: s.createdAt,
+      lastRunAt: s.lastRunAt,
+      lastStatus: s.lastStatus
+    }));
+
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(encryptedPayload, null, 2), 'utf-8');
   }
 
   public static removeSession(userId: string): void {
-    const sessions = this.getSessions().filter((s) => s.userId !== userId);
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2), 'utf-8');
+    const currentSessions = this.getSessions().filter((s) => s.userId !== userId);
+    const encryptedPayload = currentSessions.map((s) => ({
+      userId: s.userId,
+      encryptedToken: encrypt(s.token),
+      webhookUrl: s.webhookUrl,
+      createdAt: s.createdAt,
+      lastRunAt: s.lastRunAt,
+      lastStatus: s.lastStatus
+    }));
+
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(encryptedPayload, null, 2), 'utf-8');
   }
 }

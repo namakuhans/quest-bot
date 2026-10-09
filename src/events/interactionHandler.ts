@@ -6,11 +6,13 @@ import {
   ModalSubmitInteraction,
   ButtonInteraction,
   StringSelectMenuInteraction,
-  Interaction
+  REST,
+  Routes,
+  InteractionResponseType
 } from 'discord.js';
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
-import { descTexts } from '../commands/desc.js';
+import { getDescContainer } from '../commands/desc.js';
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
   if (interaction.customId === 'open_login_modal') {
@@ -50,7 +52,7 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
       ephemeral: true
     });
 
-    // Save session in JSON
+    // Save session in encrypted JSON
     SessionStorage.saveSession({
       userId: interaction.user.id,
       token,
@@ -103,13 +105,19 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
 export async function handleSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
   if (interaction.customId === 'desc_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
-    const langData = descTexts[selectedLang] || descTexts.id;
+    const containerComponents = getDescContainer(selectedLang);
 
-    const content = `# ${langData.title}\n${langData.description}`;
-
-    await interaction.update({
-      content,
-      components: interaction.message.components
-    });
+    const rest = new REST().setToken(interaction.client.token);
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: InteractionResponseType.UpdateMessage,
+          data: {
+            components: containerComponents
+          }
+        }
+      }
+    );
   }
 }

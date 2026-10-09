@@ -1,8 +1,8 @@
-import { Constants } from './constants';
+import { Constants } from './constants.js';
 import { fetch } from 'undici';
 import * as readline from 'readline/promises';
 import { stdin as input, stdout as output } from 'process';
-import type { ClientQuest } from './client';
+import type { ClientQuest } from './client.js';
 
 export class Utils extends null {
 	public static makeHeaders(init: HeadersInit | undefined) {
@@ -140,7 +140,7 @@ export class Utils extends null {
 		error: any;
 		activityReferrer: string;
 	}> {
-		let error = null;
+		let error: any = null;
 		const headers = Utils.makeDesktopHeaders(false, false);
 		const activityReferrer = await Utils.getActivityReferrer(
 			applicationId,
@@ -183,7 +183,7 @@ export class Utils extends null {
 		questTarget: number,
 		activityReferrer: string,
 	): Promise<{ success: boolean; error: any }> {
-		let error = null;
+		let error: any = null;
 		const headers = Utils.makeDesktopHeaders(false, false);
 		const discordSaysHeaders = Utils.getActivityHeaders(
 			questId,

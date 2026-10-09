@@ -1,13 +1,13 @@
 import { APIApplication } from 'discord-api-types/v10';
-import { solveCaptcha } from './captcha';
-import { ClientQuest } from './client';
+import { solveCaptcha } from './captcha.js';
+import { ClientQuest } from './client.js';
 import type {
 	AllQuestsResponse,
 	CaptchaDataFromRequest,
 	QuestTaskConfigType,
-} from './interface';
-import { Quest } from './quest';
-import { Utils } from './utils';
+} from './interface.js';
+import { Quest } from './quest.js';
+import { Utils } from './utils.js';
 import { buildConnector, Client } from 'undici';
 
 export class QuestManager implements Iterable<Quest> {

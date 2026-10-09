@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Discord.js Auto Quest Bot with login panel and ContainerV2 UI",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "tsx src/index.ts",

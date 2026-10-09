@@ -1,6 +1,6 @@
 import type {
 	Quest as QuestShape,
-} from './interface';
+} from './interface.js';
 
 export class Quest {
 	private readonly data: QuestShape;

@@ -3,10 +3,10 @@ import { RequestInit } from 'undici';
 import { REST, DefaultRestOptions, ResponseLike } from '@discordjs/rest';
 import { WebSocketManager, WebSocketShard } from '@discordjs/ws';
 import { GatewaySendPayload, GatewayOpcodes } from 'discord-api-types/v10';
-import { QuestManager } from './questManager';
-import { AllQuestsResponse } from './interface';
-import { Constants } from './constants';
-import { Utils } from './utils';
+import { QuestManager } from './questManager.js';
+import { AllQuestsResponse } from './interface.js';
+import { Constants } from './constants.js';
+import { Utils } from './utils.js';
 
 async function makeRequest(
 	url: string,
