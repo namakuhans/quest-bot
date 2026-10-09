@@ -110,6 +110,9 @@ export const howCommand = {
     .setDescription('Tampilkan panduan penggunaan & tutorial mp4 (Owner Only)'),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    // Immediately defer reply to acknowledge the interaction within 3 seconds
+    await interaction.deferReply();
+
     const fileInfo = getAttachmentFile();
     const fileName = fileInfo.fileName;
     const containerData = getHowContainer('id', fileName);
@@ -118,14 +121,14 @@ export const howCommand = {
       const fileBuffer = fs.readFileSync(fileInfo.attachmentPath);
       const attachment = new AttachmentBuilder(fileBuffer, { name: fileName });
 
-      await interaction.reply({
+      await interaction.editReply({
         flags: containerData.flags as any,
         components: containerData.components as any,
         files: [attachment]
       });
     } else {
       const noFileContainer = getHowContainer('id');
-      await interaction.reply({
+      await interaction.editReply({
         flags: noFileContainer.flags as any,
         components: noFileContainer.components as any
       });

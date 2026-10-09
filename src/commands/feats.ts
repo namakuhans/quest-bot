@@ -90,9 +90,10 @@ export const featsCommand = {
     .setDescription('Tampilkan container fitur inti Auto Quest (Owner Only)'),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
     const containerData = getFeatsContainer('id');
 
-    await interaction.reply({
+    await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
     });

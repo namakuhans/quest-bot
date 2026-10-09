@@ -82,9 +82,10 @@ export const tosCommand = {
     .setDescription('Tampilkan container Syarat & Ketentuan / Terms of Service (Owner Only)'),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
     const containerData = getTosContainer('id');
 
-    await interaction.reply({
+    await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
     });

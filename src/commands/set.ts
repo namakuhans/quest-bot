@@ -92,9 +92,10 @@ export const setCommand = {
     .setDescription('Pasang Panel Login Auto Quest Discord (Owner Only)'),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
     const containerData = getSetContainer('id');
 
-    await interaction.reply({
+    await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
     });

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import {
   ModalBuilder,
   TextInputBuilder,
@@ -5,7 +6,8 @@ import {
   ActionRowBuilder,
   ModalSubmitInteraction,
   ButtonInteraction,
-  StringSelectMenuInteraction
+  StringSelectMenuInteraction,
+  AttachmentBuilder
 } from 'discord.js';
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
@@ -104,11 +106,13 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
 }
 
 export async function handleSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
+  await interaction.deferUpdate();
+
   if (interaction.customId === 'set_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getSetContainer(selectedLang);
 
-    await interaction.update({
+    await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
     });
@@ -116,7 +120,7 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getFeatsContainer(selectedLang);
 
-    await interaction.update({
+    await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
     });
@@ -124,7 +128,7 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getTosContainer(selectedLang);
 
-    await interaction.update({
+    await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
     });
@@ -133,9 +137,21 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     const fileInfo = getAttachmentFile();
     const containerData = getHowContainer(selectedLang, fileInfo.fileName);
 
-    await interaction.update({
-      flags: containerData.flags as any,
-      components: containerData.components as any
-    });
+    if (fileInfo.attachmentPath && fileInfo.fileName) {
+      const fileBuffer = await fs.promises.readFile(fileInfo.attachmentPath);
+      const attachment = new AttachmentBuilder(fileBuffer, { name: fileInfo.fileName });
+
+      await interaction.editReply({
+        flags: containerData.flags as any,
+        components: containerData.components as any,
+        files: [attachment]
+      });
+    } else {
+      const noFileContainer = getHowContainer(selectedLang);
+      await interaction.editReply({
+        flags: noFileContainer.flags as any,
+        components: noFileContainer.components as any
+      });
+    }
   }
 }
