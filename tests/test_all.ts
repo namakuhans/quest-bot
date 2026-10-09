@@ -19,18 +19,20 @@ async function runTests() {
   assert.strictEqual(howCommand.data.name, 'how');
   console.log('✅ /set, /feats, /tos, and /how slash commands verified.');
 
-  // Test 2: How Panel ContainerV2 Structure & File Attachment
-  console.log('Test 2: How Panel ContainerV2 with File Component...');
-  const howContainerID = getHowContainer('id', 'tutorial.mp4');
-  const howContainerEN = getHowContainer('en', 'tutorial.mp4');
+  // Test 2: How Panel ContainerV2 Structure & File Attachment Fallback
+  console.log('Test 2: How Panel ContainerV2 with File Component & Fallback...');
+  const howContainerWithFile = getHowContainer('id', 'tutorial.mp4');
+  const howContainerNoFile = getHowContainer('id');
 
-  assert.strictEqual(howContainerID.flags, MessageFlags.IsComponentsV2);
-  assert.strictEqual(howContainerEN.flags, MessageFlags.IsComponentsV2);
-  const howJsonID = howContainerID.components[0].toJSON();
-  assert.strictEqual(howJsonID.type, ComponentType.Container); // 17
-  assert.strictEqual(howJsonID.components[0].type, ComponentType.File); // 13 File component
-  assert.strictEqual(howJsonID.components[0].file.url, 'attachment://tutorial.mp4');
-  console.log('✅ How Panel ContainerV2 with File Component verified.');
+  assert.strictEqual(howContainerWithFile.flags, MessageFlags.IsComponentsV2);
+  assert.strictEqual(howContainerNoFile.flags, MessageFlags.IsComponentsV2);
+  const howJsonWithFile = howContainerWithFile.components[0].toJSON();
+  const howJsonNoFile = howContainerNoFile.components[0].toJSON();
+
+  assert.strictEqual(howJsonWithFile.components[0].type, ComponentType.File); // 13 File component
+  assert.strictEqual(howJsonWithFile.components[0].file.url, 'attachment://tutorial.mp4');
+  assert.strictEqual(howJsonNoFile.components[0].type, ComponentType.TextDisplay); // 10 TextDisplay
+  console.log('✅ How Panel ContainerV2 with File Component and Fallback verified.');
 
   // Test 3: Set Panel ContainerV2 Structure & Multi-Language
   console.log('Test 3: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');

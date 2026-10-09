@@ -47,7 +47,7 @@ export const howTexts = {
   }
 };
 
-function getAttachmentFile(): { attachmentPath?: string; fileName?: string } {
+export function getAttachmentFile(): { attachmentPath?: string; fileName?: string } {
   const assetsDir = path.join(process.cwd(), 'assets');
   if (fs.existsSync(assetsDir)) {
     const files = fs.readdirSync(assetsDir);
@@ -62,7 +62,7 @@ function getAttachmentFile(): { attachmentPath?: string; fileName?: string } {
   return {};
 }
 
-export function getHowContainer(lang: 'id' | 'en', fileName: string = 'guide.mp4') {
+export function getHowContainer(lang: 'id' | 'en', fileName?: string) {
   const selectMenu = new StringSelectMenuBuilder()
     .setCustomId('how_language_select')
     .setPlaceholder('Pilih Bahasa / Select Language')
@@ -86,7 +86,7 @@ export function getHowContainer(lang: 'id' | 'en', fileName: string = 'guide.mp4
 
   return buildContainerV2({
     accentColor: 0x5865f2,
-    attachmentUrl: `attachment://${fileName}`,
+    ...(fileName ? { attachmentUrl: `attachment://${fileName}` } : {}),
     sections: [
       {
         title: data.header,
@@ -112,30 +112,58 @@ export const howCommand = {
 
   async execute(interaction: ChatInputCommandInteraction) {
     const fileInfo = getAttachmentFile();
-    const fileName = fileInfo.fileName || 'guide.mp4';
+    const fileName = fileInfo.fileName;
     const containerData = getHowContainer('id', fileName);
 
     const filesPayload: { name: string; data: Buffer }[] = [];
-    if (fileInfo.attachmentPath) {
+    let attachmentsPayload: { id: number; filename: string }[] | undefined = undefined;
+
+    if (fileInfo.attachmentPath && fileName) {
+      const fileBuffer = fs.readFileSync(fileInfo.attachmentPath);
       filesPayload.push({
         name: fileName,
-        data: fs.readFileSync(fileInfo.attachmentPath)
+        data: fileBuffer
       });
+      attachmentsPayload = [
+        {
+          id: 0,
+          filename: fileName
+        }
+      ];
     }
 
     const rest = new REST().setToken(interaction.client.token);
-    await rest.post(
-      Routes.interactionCallback(interaction.id, interaction.token),
-      {
-        body: {
-          type: InteractionResponseType.ChannelMessageWithSource,
-          data: {
-            flags: containerData.flags,
-            components: containerData.components.map((c) => c.toJSON())
+
+    if (filesPayload.length > 0) {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: InteractionResponseType.ChannelMessageWithSource,
+            data: {
+              flags: containerData.flags,
+              components: containerData.components.map((c) => c.toJSON()),
+              attachments: attachmentsPayload
+            }
+          },
+          files: filesPayload
+        }
+      );
+    } else {
+      // Send ContainerV2 without referencing an unattached file
+      const noFileContainer = getHowContainer('id');
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: InteractionResponseType.ChannelMessageWithSource,
+            data: {
+              flags: noFileContainer.flags,
+              components: noFileContainer.components.map((c) => c.toJSON())
+            }
           }
-        },
-        files: filesPayload.length > 0 ? filesPayload : undefined
-      }
-    );
+        }
+      );
+    }
   }
 };
