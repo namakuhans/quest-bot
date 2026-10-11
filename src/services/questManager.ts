@@ -276,6 +276,8 @@ export class QuestManager {
 		onProgress?: ProgressCallback
 	) {
 		const interval = 20;
+		let lastReportedMinutes: number | null = null;
+
 		while (!quest.isCompleted()) {
 			const secondsDone =
 				(quest.userStatus?.progress?.[taskName]?.value as number) || 0;
@@ -292,9 +294,13 @@ export class QuestManager {
 			const minutesLeft = Math.ceil((secondsNeeded - secondsDone) / 60);
 			const statusMsg = `Spoofed your game to ${applicationName}. Wait for ${minutesLeft} more minute(s).`;
 			console.log(statusMsg);
-			if (onProgress) {
+
+			// Only trigger progress webhook when the remaining minutes actually changes
+			if (onProgress && lastReportedMinutes !== minutesLeft) {
+				lastReportedMinutes = minutesLeft;
 				await onProgress(statusMsg).catch(() => {});
 			}
+
 			await new Promise((resolve) =>
 				setTimeout(resolve, interval * 1000),
 			);
@@ -323,6 +329,8 @@ export class QuestManager {
 	) {
 		const interval = 20;
 		const streamKey = 'call:1:1';
+		let lastReportedMinutes: number | null = null;
+
 		while (!quest.isCompleted()) {
 			const secondsDone =
 				(quest.userStatus?.progress?.[taskName]?.value as number) || 0;
@@ -336,9 +344,13 @@ export class QuestManager {
 			const minutesLeft = Math.ceil((secondsNeeded - secondsDone) / 60);
 			const statusMsg = `Spoofed your activity to ${applicationName}. Wait for ${minutesLeft} more minute(s).`;
 			console.log(statusMsg);
-			if (onProgress) {
+
+			// Only trigger progress webhook when the remaining minutes actually changes
+			if (onProgress && lastReportedMinutes !== minutesLeft) {
+				lastReportedMinutes = minutesLeft;
 				await onProgress(statusMsg).catch(() => {});
 			}
+
 			await new Promise((resolve) =>
 				setTimeout(resolve, interval * 1000),
 			);
