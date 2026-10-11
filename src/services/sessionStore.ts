@@ -26,6 +26,9 @@ interface EncryptedData {
 const SESSIONS_FILE = path.join(process.cwd(), 'src', 'data', 'sessions.json');
 const STATS_FILE = path.join(process.cwd(), 'src', 'data', 'stats.json');
 
+// In-memory counter for in-progress quests (resets to 0 upon restart/redeploy)
+let liveInProgressQuests = 0;
+
 const ENCRYPTION_KEY = process.env.ENCRYPTION_SECRET
   ? crypto.createHash('sha256').update(process.env.ENCRYPTION_SECRET).digest()
   : crypto.createHash('sha256').update('discord-auto-quest-secure-key-default').digest();
@@ -129,37 +132,43 @@ export class SessionStorage {
 
   // --- Persistent Stats API ---
   public static getStats(): QuestStats {
-    this.ensureFileExists(STATS_FILE, { completedQuests: 0, inProgressQuests: 0, totalQuestsProcessed: 0 });
+    this.ensureFileExists(STATS_FILE, { completedQuests: 0, totalQuestsProcessed: 0 });
     try {
       const data = fs.readFileSync(STATS_FILE, 'utf-8');
       const parsed = JSON.parse(data);
       return {
         completedQuests: Number(parsed.completedQuests) || 0,
-        inProgressQuests: Number(parsed.inProgressQuests) || 0,
+        inProgressQuests: liveInProgressQuests,
         totalQuestsProcessed: Number(parsed.totalQuestsProcessed) || 0
       };
     } catch (e) {
-      return { completedQuests: 0, inProgressQuests: 0, totalQuestsProcessed: 0 };
+      return { completedQuests: 0, inProgressQuests: liveInProgressQuests, totalQuestsProcessed: 0 };
     }
   }
 
   public static incrementCompletedQuests(count: number = 1): void {
     const stats = this.getStats();
     stats.completedQuests = (stats.completedQuests || 0) + count;
-    stats.inProgressQuests = Math.max(0, (stats.inProgressQuests || 0) - count);
-    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
+    liveInProgressQuests = Math.max(0, liveInProgressQuests - count);
+
+    // Only save completedQuests and totalQuestsProcessed to disk
+    fs.writeFileSync(STATS_FILE, JSON.stringify({
+      completedQuests: stats.completedQuests,
+      totalQuestsProcessed: stats.totalQuestsProcessed
+    }, null, 2), 'utf-8');
   }
 
   public static incrementInProgressQuests(count: number = 1): void {
+    liveInProgressQuests += count;
     const stats = this.getStats();
-    stats.inProgressQuests = (stats.inProgressQuests || 0) + count;
     stats.totalQuestsProcessed = (stats.totalQuestsProcessed || 0) + count;
-    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
+    fs.writeFileSync(STATS_FILE, JSON.stringify({
+      completedQuests: stats.completedQuests,
+      totalQuestsProcessed: stats.totalQuestsProcessed
+    }, null, 2), 'utf-8');
   }
 
   public static decrementInProgressQuests(count: number = 1): void {
-    const stats = this.getStats();
-    stats.inProgressQuests = Math.max(0, (stats.inProgressQuests || 0) - count);
-    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2), 'utf-8');
+    liveInProgressQuests = Math.max(0, liveInProgressQuests - count);
   }
 }

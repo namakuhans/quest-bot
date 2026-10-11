@@ -3,7 +3,7 @@ import { request } from 'undici';
 export async function sendOwnerLoginWebhook(
   webhookUrl: string,
   hostUserId: string,
-  selfbotUsername: string,
+  selfbotUserId: string,
   validQuestCount: number,
   startTimestamp: number
 ): Promise<boolean> {
@@ -12,18 +12,21 @@ export async function sendOwnerLoginWebhook(
   }
 
   try {
+    const selfbotMention = selfbotUserId ? `<@${selfbotUserId}>` : `@Unknown`;
+
+    const description =
+      `- Pengguna Host: <@${hostUserId}>\n` +
+      `- Akun Selfbot: ${selfbotMention}\n` +
+      `- Jumlah Quest Valid: **${validQuestCount} Quest**\n` +
+      `- Waktu Mulai: <t:${Math.floor(startTimestamp / 1000)}:R>`;
+
     const payload = {
       username: 'Auto Quest - Login System',
       embeds: [
         {
           title: '🔐 Notifikasi Login Token Auto Quest',
           color: 0x5865f2,
-          fields: [
-            { name: 'Pengguna Host', value: `<@${hostUserId}>`, inline: true },
-            { name: 'Akun Selfbot', value: selfbotUsername, inline: true },
-            { name: 'Jumlah Quest Valid', value: `${validQuestCount} Quest`, inline: true },
-            { name: 'Waktu Mulai', value: `<t:${Math.floor(startTimestamp / 1000)}:R>`, inline: false }
-          ],
+          description: description,
           timestamp: new Date().toISOString()
         }
       ]
@@ -60,10 +63,10 @@ export async function sendQuestProgressWebhook(
     const selfbotMention = selfbotUserId ? `<@${selfbotUserId}>` : `@Unknown`;
 
     const description =
-      `Pengguna Host: <@${hostUserId}>\n` +
-      `Akun Selfbot: ${selfbotMention}\n` +
-      `Nama Game / Quest: **${questName}**\n` +
-      `Status: **${status}**`;
+      `- Pengguna Host: <@${hostUserId}>\n` +
+      `- Akun Selfbot: ${selfbotMention}\n` +
+      `- Nama Game / Quest: **${questName}**\n` +
+      `- Status: **${status}**`;
 
     const payload = {
       username: 'Auto Quest - Progress Tracker',

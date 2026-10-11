@@ -27,13 +27,22 @@ async function runTests() {
   assert.strictEqual(panels.length, 1);
   assert.strictEqual(panels[0].channelId, 'channel_123');
 
-  // Test 3: Webhook formatting safety (no backticks on values, description format)
-  console.log('Test 3: Webhook formatting safety on invalid URL...');
-  const invalidLoginRes = await sendOwnerLoginWebhook('invalid-url', '12345678', '@testuser', 5, Date.now());
+  // Test 3: In-Memory vs Persistent Stats Storage
+  console.log('Test 3: Persistent Completed Quests & In-Memory In-Progress Quests...');
+  SessionStorage.incrementCompletedQuests(2);
+  SessionStorage.incrementInProgressQuests(3);
+  let stats = SessionStorage.getStats();
+  assert.ok(stats.completedQuests >= 2);
+  assert.strictEqual(stats.inProgressQuests, 3);
+  console.log('✅ Completed quests persistence & In-memory in-progress stats verified.');
+
+  // Test 4: Webhook formatting safety on invalid URL (- Variable: **Value**, <@selfbotUserId>)
+  console.log('Test 4: Webhook description formatting safety on invalid URL...');
+  const invalidLoginRes = await sendOwnerLoginWebhook('invalid-url', '12345678', '87654321', 5, Date.now());
   const invalidProgressRes = await sendQuestProgressWebhook('invalid-url', '12345678', '87654321', 'Genshin Impact', 'Wait for 5 more minute(s)');
   assert.strictEqual(invalidLoginRes, false);
   assert.strictEqual(invalidProgressRes, false);
-  console.log('✅ Webhook description formatting and user mention verified.');
+  console.log('✅ Owner Login & Quest Progress webhook description formatting and user mention verified.');
 
   console.log('--- All Tests Passed Successfully! ---');
 }

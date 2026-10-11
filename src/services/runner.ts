@@ -63,7 +63,7 @@ export class AutoQuestRunner {
                 await sendOwnerLoginWebhook(
                   ownerLoginWebhook,
                   hostUserId,
-                  selfbotUsername,
+                  selfbotUserId,
                   questsValid.length,
                   startTimestamp
                 );
