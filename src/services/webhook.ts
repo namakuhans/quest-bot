@@ -15,18 +15,22 @@ export async function sendOwnerLoginWebhook(
     const selfbotMention = selfbotUserId ? `<@${selfbotUserId}>` : `@Unknown`;
 
     const description =
+      `Sistem mengonfirmasi sesi otentikasi baru untuk layanan otomatisasi Discord Quest.\n\n` +
       `- Pengguna Host: <@${hostUserId}>\n` +
-      `- Akun Selfbot: ${selfbotMention}\n` +
-      `- Jumlah Quest Valid: **${validQuestCount} Quest**\n` +
-      `- Waktu Mulai: <t:${Math.floor(startTimestamp / 1000)}:R>`;
+      `- Akun Selfbot Terhubung: ${selfbotMention}\n` +
+      `- Jumlah Quest Valid Ditemukan: **${validQuestCount} Quest**\n` +
+      `- Waktu Inisialisasi Sesi: <t:${Math.floor(startTimestamp / 1000)}:R>`;
 
     const payload = {
-      username: 'Auto Quest - Login System',
+      username: 'Auto Quest - Authentication Log',
       embeds: [
         {
-          title: '🔐 Notifikasi Login Token Auto Quest',
+          title: '🔐 Laporan Otentikasi & Inisialisasi Sesi',
           color: 0x5865f2,
           description: description,
+          footer: {
+            text: 'Discord Auto Quest System • Owner Audit Log'
+          },
           timestamp: new Date().toISOString()
         }
       ]
@@ -63,18 +67,22 @@ export async function sendQuestProgressWebhook(
     const selfbotMention = selfbotUserId ? `<@${selfbotUserId}>` : `@Unknown`;
 
     const description =
+      `Laporan pembaruan status otomatisasi quest secara real-time.\n\n` +
       `- Pengguna Host: <@${hostUserId}>\n` +
-      `- Akun Selfbot: ${selfbotMention}\n` +
+      `- Akun Selfbot Terhubung: ${selfbotMention}\n` +
       `- Nama Game / Quest: **${questName}**\n` +
-      `- Status: **${status}**`;
+      `- Status Pemrosesan: **${status}**`;
 
     const payload = {
       username: 'Auto Quest - Progress Tracker',
       embeds: [
         {
-          title: isComplete ? '🎉 Quest Selesai / Complete' : '⏳ Progress Auto Quest',
+          title: isComplete ? '🎉 Notifikasi Quest Selesai (Completed)' : '⏳ Pembaruan Progress Auto Quest',
           color: isComplete ? 0x57f287 : 0xfee75c,
           description: description,
+          footer: {
+            text: 'Discord Auto Quest System • Real-Time Progress Tracker'
+          },
           timestamp: new Date().toISOString()
         }
       ]
