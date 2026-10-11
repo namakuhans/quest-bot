@@ -12,7 +12,6 @@ async function makeRequest(
 	url: string,
 	init: RequestInit,
 ): Promise<ResponseLike> {
-	// console.log(`Making request to ${url} with method ${init.method}...`);
 	if (init.headers) {
 		init.headers = Utils.makeHeaders(init.headers as any);
 	}
@@ -46,6 +45,7 @@ export class ClientQuest extends Client {
 	public webhook = new WebhooksAPI(new REST());
 	#webhookId: string | null = null;
 	#webhookToken: string | null = null;
+
 	constructor(token: string) {
 		if (!token) {
 			throw new Error('Token is required to initialize the client.');
@@ -66,9 +66,7 @@ export class ClientQuest extends Client {
 			rest,
 			readyTimeout: 120_000,
 		});
-		gateway.fetchGatewayInformation = (
-			force?: boolean,
-		): Promise<APIGatewayBotInfo> => {
+		gateway.fetchGatewayInformation = (): Promise<APIGatewayBotInfo> => {
 			return Promise.resolve({
 				url: 'wss://gateway.discord.gg',
 				shards: 1,
@@ -84,6 +82,7 @@ export class ClientQuest extends Client {
 		this.websocketManager = gateway;
 		gateway.on('error', () => null);
 	}
+
 	connect() {
 		return Promise.allSettled([
 			Utils.updateLatestBuildVersion(),
@@ -93,18 +92,20 @@ export class ClientQuest extends Client {
 			return this.sendWebhookMessage('Error during client connection: ' + e.message);
 		});
 	}
+
 	destroy() {
 		return this.websocketManager.destroy();
 	}
+
 	setupWebhook() {
 		return Utils.extractWebhookInfo().then((info) => {
 			if (info) {
 				this.#webhookId = info.id;
 				this.#webhookToken = info.token;
-				console.log('Webhook setup complete.');
 			}
 		});
 	}
+
 	fetchQuests(fetchExcludedQuests = false) {
 		return this.rest
 			.get('/quests/@me')
@@ -120,6 +121,7 @@ export class ClientQuest extends Client {
 				return manager;
 			});
 	}
+
 	sendWebhookMessage(content: string) {
 		if (this.#webhookId && this.#webhookToken) {
 			this.webhook
@@ -129,6 +131,7 @@ export class ClientQuest extends Client {
 				.catch(() => {});
 		}
 	}
+
 	emitQuestCompleted(questId: string) {
 		return this.sendWebhookMessage(
 			`[Quest Completed!](https://discord.com/quests/${questId})`,

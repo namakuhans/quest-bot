@@ -38,7 +38,6 @@ export function buildContainerV2(options: {
     const textDisplay = new TextDisplayBuilder().setContent(text);
     container.addTextDisplayComponents(textDisplay);
 
-    // Add large spacing separator between text sections
     if (index < options.sections.length - 1) {
       const separator = new SeparatorBuilder()
         .setSpacing(SeparatorSpacingSize.Large)
@@ -67,7 +66,6 @@ export function buildContainerV2(options: {
 
   // 3. Action Rows (Buttons / Select Menus)
   if (options.actionRows && options.actionRows.length > 0) {
-    // Add separator before action row
     const separator = new SeparatorBuilder()
       .setSpacing(SeparatorSpacingSize.Large)
       .setDivider(true);
