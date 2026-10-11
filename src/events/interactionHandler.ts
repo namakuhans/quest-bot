@@ -1,4 +1,3 @@
-import fs from 'fs';
 import {
   ModalBuilder,
   TextInputBuilder,
@@ -6,15 +5,15 @@ import {
   ActionRowBuilder,
   ModalSubmitInteraction,
   ButtonInteraction,
-  StringSelectMenuInteraction,
-  AttachmentBuilder
+  StringSelectMenuInteraction
 } from 'discord.js';
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
 import { getSetContainer } from '../commands/set.js';
 import { getFeatsContainer } from '../commands/feats.js';
-import { getTosContainer, getTosNoticeAttachment } from '../commands/tos.js';
+import { getTosContainer } from '../commands/tos.js';
 import { getHowContainer, getAttachmentFile } from '../commands/how.js';
+import { PanelManager } from '../services/panelManager.js';
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
   if (interaction.customId === 'open_login_modal') {
@@ -112,6 +111,10 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getSetContainer(selectedLang);
 
+    if (interaction.channelId && interaction.message.id) {
+      PanelManager.updatePanelLanguage(interaction.channelId, interaction.message.id, selectedLang);
+    }
+
     await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
@@ -126,45 +129,20 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     });
   } else if (interaction.customId === 'tos_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
-    const noticeInfo = getTosNoticeAttachment();
-    const containerData = getTosContainer(selectedLang, noticeInfo.fileName);
+    const containerData = getTosContainer(selectedLang);
 
-    if (noticeInfo.attachmentPath && noticeInfo.fileName) {
-      const fileBuffer = await fs.promises.readFile(noticeInfo.attachmentPath);
-      const attachment = new AttachmentBuilder(fileBuffer, { name: noticeInfo.fileName });
-
-      await interaction.editReply({
-        flags: containerData.flags as any,
-        components: containerData.components as any,
-        files: [attachment]
-      });
-    } else {
-      const noFileContainer = getTosContainer(selectedLang);
-      await interaction.editReply({
-        flags: noFileContainer.flags as any,
-        components: noFileContainer.components as any
-      });
-    }
+    await interaction.editReply({
+      flags: containerData.flags as any,
+      components: containerData.components as any
+    });
   } else if (interaction.customId === 'how_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const fileInfo = getAttachmentFile();
     const containerData = getHowContainer(selectedLang, fileInfo.fileName);
 
-    if (fileInfo.attachmentPath && fileInfo.fileName) {
-      const fileBuffer = await fs.promises.readFile(fileInfo.attachmentPath);
-      const attachment = new AttachmentBuilder(fileBuffer, { name: fileInfo.fileName });
-
-      await interaction.editReply({
-        flags: containerData.flags as any,
-        components: containerData.components as any,
-        files: [attachment]
-      });
-    } else {
-      const noFileContainer = getHowContainer(selectedLang);
-      await interaction.editReply({
-        flags: noFileContainer.flags as any,
-        components: noFileContainer.components as any
-      });
-    }
+    await interaction.editReply({
+      flags: containerData.flags as any,
+      components: containerData.components as any
+    });
   }
 }

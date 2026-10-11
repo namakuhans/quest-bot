@@ -3,6 +3,7 @@ import { WebSocketShardEvents } from '@discordjs/ws';
 import { ClientQuest } from './client.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from './webhook.js';
 import { SessionStorage } from './sessionStore.js';
+import { PanelManager } from './panelManager.js';
 
 export class AutoQuestRunner {
   public static async runForUser(
@@ -50,9 +51,10 @@ export class AutoQuestRunner {
 
               console.log(`[AutoQuest] Logged in as ${selfbotUsername}. Found ${questsValid.length} valid quests.`);
 
-              // Increment persistent in-progress stats
+              // Increment persistent in-progress stats and update active login panels in real-time
               if (questsValid.length > 0) {
                 SessionStorage.incrementInProgressQuests(questsValid.length);
+                PanelManager.refreshActivePanels().catch(() => {});
               }
 
               // Send Owner Login Webhook to OWNER_LOGIN_WEBHOOK_URL if configured
@@ -99,8 +101,9 @@ export class AutoQuestRunner {
                   try {
                     await questClient!.questManager!.doingQuest(quest);
 
-                    // Increment persistent completed quest stats upon completion
+                    // Increment persistent completed quest stats upon completion & update active login panels in real-time
                     SessionStorage.incrementCompletedQuests(1);
+                    PanelManager.refreshActivePanels().catch(() => {});
 
                     // Send Completion Notification to progressWebhook
                     if (progressWebhook) {
@@ -113,8 +116,9 @@ export class AutoQuestRunner {
                       );
                     }
                   } catch (err) {
-                    // Decrement in-progress stats if quest failed
+                    // Decrement in-progress stats if quest failed & update panels
                     SessionStorage.decrementInProgressQuests(1);
+                    PanelManager.refreshActivePanels().catch(() => {});
                     throw err;
                   }
                 })

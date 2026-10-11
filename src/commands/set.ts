@@ -9,6 +9,7 @@ import {
 } from 'discord.js';
 import { buildContainerV2 } from '../utils/container.js';
 import { SessionStorage } from '../services/sessionStore.js';
+import { PanelManager } from '../services/panelManager.js';
 
 export const setTexts = {
   id: {
@@ -95,9 +96,13 @@ export const setCommand = {
     await interaction.deferReply();
     const containerData = getSetContainer('id');
 
-    await interaction.editReply({
+    const replyMessage = await interaction.editReply({
       flags: containerData.flags as any,
       components: containerData.components as any
     });
+
+    if (replyMessage && interaction.channelId) {
+      PanelManager.savePanel(interaction.channelId, replyMessage.id, 'id');
+    }
   }
 };
