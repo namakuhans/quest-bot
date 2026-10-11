@@ -1,237 +1,92 @@
-import { APIApplication } from 'discord-api-types/v10';
-import { solveCaptcha } from './captcha.js';
-import { ClientQuest } from './client.js';
-import type {
-	AllQuestsResponse,
-	CaptchaDataFromRequest,
-	QuestTaskConfigType,
-} from './interface.js';
+import { QuestTaskConfigType, CaptchaDataFromRequest } from './interface.js';
 import { Quest } from './quest.js';
+import { ClientQuest } from './client.js';
+import { APIApplication } from 'discord-api-types/v10';
 import { Utils } from './utils.js';
-import { buildConnector, Client } from 'undici';
+import { solveCaptcha } from './captcha.js';
+import { Agent } from 'undici';
 
-export class QuestManager implements Iterable<Quest> {
-	private readonly quests = new Map<string, Quest>();
-	public readonly client: ClientQuest;
+type ProgressCallback = (statusText: string) => Promise<void>;
+
+export class QuestManager {
+	public client: ClientQuest;
+	public quests: Quest[];
+
 	constructor(client: ClientQuest, quests: Quest[] = []) {
 		this.client = client;
-		quests.forEach((quest) => this.quests.set(quest.id, quest));
+		this.quests = quests;
 	}
 
-	static async fromResponse(
+	public static fromResponse(
 		client: ClientQuest,
-		response: AllQuestsResponse,
+		response: {
+			quests: any[];
+		},
 		fetchExcludedQuests = false,
-	): Promise<QuestManager> {
-		if (response.quest_enrollment_blocked_until !== null) {
-			throw new Error(
-				`Quest enrollment is blocked until ${response.quest_enrollment_blocked_until}.`,
-			);
-		}
-		const questManager = new QuestManager(
-			client,
-			response.quests.map((quest) => Quest.create(quest)),
-		);
-		if (fetchExcludedQuests) {
-			for (const quest of response.excluded_quests) {
-				if (quest.id) {
-					await questManager.addExcludedQuest(quest.id);
-				}
-			}
-		}
-		return Promise.resolve(questManager);
+	): QuestManager {
+		const quests = (response?.quests ?? [])
+			.map((q) => new Quest(client, q))
+			.filter((q) => fetchExcludedQuests || !q.isExcludedQuest());
+		return new QuestManager(client, quests);
 	}
 
-	protected addExcludedQuest(questId: string) {
-		// fetch quest details and add to quests
-		return this.client.rest
-			.get(`/quests/${questId}`)
-			.then((response) => {
-				const quest = Quest.create({
-					id: questId,
-					config: response as any,
-					user_status: null,
-					targeted_content: 0,
-					preview: false,
-				});
-				console.log(
-					`Added excluded quest "${quest.config.messages.quest_name}" to the quest manager.`,
-				);
-				this.quests.set(quest.id, quest);
-			})
-			.catch((err) => {
-				console.error(
-					`Failed to fetch excluded quest "${questId}".`,
-					err.message,
-				);
-			});
+	public filterQuestsValidToDo(): Quest[] {
+		return this.quests.filter((q: any) => q.isValidQuestToDo ? q.isValidQuestToDo() : !q.isCompleted());
 	}
 
-	[Symbol.iterator](): IterableIterator<Quest> {
-		return this.quests.values();
+	public filterQuestsValidToRedeem(): Quest[] {
+		return this.quests.filter((q: any) => q.isValidQuestToRedeem ? q.isValidQuestToRedeem() : q.isCompleted());
 	}
 
-	get size(): number {
-		return this.quests.size;
-	}
-
-	list(): Quest[] {
-		return Array.from(this.quests.values());
-	}
-
-	get(id: string): Quest | undefined {
-		return this.quests.get(id);
-	}
-
-	upsert(quest: Quest): void {
-		this.quests.set(quest.id, quest);
-	}
-
-	remove(id: string): boolean {
-		return this.quests.delete(id);
-	}
-
-	clear(): void {
-		this.quests.clear();
-	}
-
-	getExpired(date: Date = new Date()): Quest[] {
-		return this.list().filter((quest) => quest.isExpired(date));
-	}
-
-	getCompleted(): Quest[] {
-		return this.list().filter((quest) => quest.isCompleted());
-	}
-
-	getClaimable(): Quest[] {
-		return this.list().filter(
-			(quest) => quest.isCompleted() && !quest.hasClaimedRewards(),
-		);
-	}
-
-	hasQuest(id: string): boolean {
-		return this.quests.has(id);
-	}
-
-	filterQuestsValidToDo() {
-		return this.list().filter(
-			(quest) => !quest.isCompleted() && !quest.isExpired(),
-		);
-	}
-
-	filterQuestsValidToRedeem() {
-		return this.list().filter(
-			(quest) => quest.isCompleted() && !quest.hasClaimedRewards(),
-		);
-	}
-
-	getApplicationData(ids: string[]) {
-		const query = new URLSearchParams();
-		ids.forEach((id) => query.append('application_ids', id));
-		return this.client.rest.get(`/applications/public`, {
-			query,
-		}) as Promise<
+	async acceptQuest(quest: Quest, isAndroid = false) {
+		const headers = isAndroid
+			? (Utils.makeAndroidHeaders(false) as any)
+			: (Utils.makeDesktopHeaders(false) as any);
+		const response = await this.client.rest.post(
+			`/quests/${quest.id}/enroll`,
 			{
-				// Partial<ApplicationData>
-				id: string;
-				name: string;
-				icon: string;
-				description: string;
-				executables: {
-					os: string;
-					name: string;
-					is_launcher: boolean;
-				}[];
-			}[]
-		>;
-	}
-
-	/**
-	 * Enroll in a quest.
-	 * @param quest quest to enroll in
-	 * @param isAndroid boolean
-	 * @warning This API is heavily rate-limited (45 minutes). Use with caution.
-	 */
-	acceptQuest(quest: Quest, isAndroid = false): Promise<Quest | undefined> {
-		// console.log(`Accepting quest "${questId}"...`);
-		return this.client.rest
-			.post(`/quests/${quest.id}/enroll`, {
 				body: {
-					location: isAndroid ? 12 : 11, // QUEST_HOME_MOBILE : QUEST_HOME_DESKTOP | https://docs.discord.food/resources/quests#quest-content-type
-					// location: 19, // QUEST_SHARE_LINK
+					location: 11, // QUEST_HOME_DESKTOP | https://docs.discord.food/resources/quests#quest-content-type
 					is_targeted: false,
+					metadata_raw: null,
 					metadata_sealed: null,
 					traffic_metadata_raw: quest.raw.traffic_metadata_raw,
 					traffic_metadata_sealed: quest.raw.traffic_metadata_sealed,
 				},
-				headers: {
-					AndroidRequest: isAndroid ? 'true' : 'false',
-				},
-			})
-			.then((r) => {
-				const q = this.get(quest.id);
-				q?.updateUserStatus(r as any);
-				return q;
-			});
+				headers,
+			},
+		);
+		quest.updateUserStatus(response as any);
 	}
 
-	private async timeout(ms: number) {
+	async timeout(ms: number) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
 	async redeemQuest(
 		quest: Quest,
 		retry = 0,
-		captchaHeaders?: Record<string, string>,
-	): Promise<void> {
-		if (retry === 3) {
-			console.error(
-				`Failed to redeem quest "${quest.config.messages.quest_name}" after ${retry} attempts.`,
-			);
-			return;
-		}
-		if (!quest.isCompleted()) {
-			console.error(`Cannot redeem rewards for an incomplete quest.`);
-			return;
-		}
-		if (quest.hasClaimedRewards()) {
-			console.error(`Rewards for this quest have already been claimed.`);
-			return;
+		customHeaders?: Record<string, string>,
+	) {
+		let agent: Agent | undefined = undefined;
+		let captchaHeaders: Record<string, string> = {
+			'content-type': 'application/json',
+		};
+		if (customHeaders) {
+			captchaHeaders = { ...captchaHeaders, ...customHeaders };
 		}
 		try {
-			const agent = new Client('https://discord.com', {
-				connect: buildConnector({
-					ciphers: [
-						'TLS_AES_128_GCM_SHA256',
-						'TLS_AES_256_GCM_SHA384',
-						'TLS_CHACHA20_POLY1305_SHA256',
-						'ECDHE-ECDSA-AES128-GCM-SHA256',
-						'ECDHE-RSA-AES128-GCM-SHA256',
-						'ECDHE-ECDSA-AES256-GCM-SHA384',
-						'ECDHE-RSA-AES256-GCM-SHA384',
-						'ECDHE-ECDSA-CHACHA20-POLY1305',
-						'ECDHE-RSA-CHACHA20-POLY1305',
-						'ECDHE-RSA-AES128-SHA',
-						'ECDHE-RSA-AES256-SHA',
-						'AES128-GCM-SHA256',
-						'AES256-GCM-SHA384',
-						'AES128-SHA',
-						'AES256-SHA',
-					].join(':'),
-				}),
-			});
 			const res = (await this.client.rest.post(
 				`/quests/${quest.id}/claim-reward`,
 				{
 					body: {
 						platform: quest.raw.config.rewards_config.platforms[0],
-						location: 11, // QUEST_HOME_DESKTOP | https://docs.discord.food/resources/quests#quest-content-type
+						location: 11,
 						is_targeted: false,
 						metadata_raw: null,
 						metadata_sealed: null,
 						traffic_metadata_raw: quest.raw.traffic_metadata_raw,
-						traffic_metadata_sealed:
-							quest.raw.traffic_metadata_sealed,
+						traffic_metadata_sealed: quest.raw.traffic_metadata_sealed,
 					},
 					headers: captchaHeaders,
 					dispatcher: agent,
@@ -243,16 +98,12 @@ export class QuestManager implements Iterable<Quest> {
 			quest.updateUserStatus(res);
 		} catch (err: any) {
 			const rawError = err.rawError as CaptchaDataFromRequest;
-			if (rawError['captcha_key'] && rawError['captcha_sitekey']) {
+			if (rawError && rawError['captcha_key'] && rawError['captcha_sitekey']) {
 				console.warn(
 					`Captcha required to redeem rewards for quest "${quest.config.messages.quest_name}".`,
 					rawError,
 				);
 				const solvedCaptchaKey = await solveCaptcha(rawError);
-				console.log(
-					`Captcha Key solved: ${solvedCaptchaKey.slice(0, 30)}<0,30>. Retrying reward redemption...`,
-				);
-				// Todo: Fix "Unknown Message" error when solving captcha for quest rewards claiming.
 				return this.redeemQuest(quest, retry + 1, {
 					'x-captcha-key': solvedCaptchaKey,
 					'x-captcha-rqtoken': rawError['captcha_rqtoken'],
@@ -267,7 +118,7 @@ export class QuestManager implements Iterable<Quest> {
 		}
 	}
 
-	async doingQuest(quest: Quest) {
+	async doingQuest(quest: Quest, onProgress?: ProgressCallback) {
 		const questName = quest.config.messages.quest_name;
 		const isAndroid =
 			Boolean(quest.config.task_config_v2.tasks.WATCH_VIDEO_ON_MOBILE) &&
@@ -324,6 +175,7 @@ export class QuestManager implements Iterable<Quest> {
 					secondsNeeded,
 					taskName,
 					applicationName,
+					onProgress
 				);
 				break;
 			}
@@ -334,6 +186,7 @@ export class QuestManager implements Iterable<Quest> {
 					secondsNeeded,
 					taskName,
 					applicationName,
+					onProgress
 				);
 				break;
 			}
@@ -358,6 +211,7 @@ export class QuestManager implements Iterable<Quest> {
 			}
 		}
 	}
+
 	async doingWatchVideoQuest(
 		quest: Quest,
 		questName: string,
@@ -412,12 +266,14 @@ export class QuestManager implements Iterable<Quest> {
 		console.log(`Spoofing video for ${questName}.`);
 		await fn();
 	}
+
 	async doingPlayOnPlatformQuest(
 		quest: Quest,
 		questName: string,
 		secondsNeeded: number,
 		taskName: string,
 		applicationName: string,
+		onProgress?: ProgressCallback
 	) {
 		const interval = 20;
 		while (!quest.isCompleted()) {
@@ -433,11 +289,12 @@ export class QuestManager implements Iterable<Quest> {
 				},
 			);
 			quest.updateUserStatus(res as any);
-			console.log(
-				`Spoofed your game to ${applicationName}. Wait for ${Math.ceil(
-					(secondsNeeded - secondsDone) / 60,
-				)} more minute(s).`,
-			);
+			const minutesLeft = Math.ceil((secondsNeeded - secondsDone) / 60);
+			const statusMsg = `Spoofed your game to ${applicationName}. Wait for ${minutesLeft} more minute(s).`;
+			console.log(statusMsg);
+			if (onProgress) {
+				await onProgress(statusMsg).catch(() => {});
+			}
 			await new Promise((resolve) =>
 				setTimeout(resolve, interval * 1000),
 			);
@@ -455,15 +312,17 @@ export class QuestManager implements Iterable<Quest> {
 		console.log(`Quest "${questName}" completed!`);
 		this.client.emitQuestCompleted(quest.id);
 	}
+
 	async doingPlayActivityQuest(
 		quest: Quest,
 		questName: string,
 		secondsNeeded: number,
 		taskName: string,
 		applicationName: string,
+		onProgress?: ProgressCallback
 	) {
 		const interval = 20;
-		const streamKey = 'call:1:1'; // Todo: call:channel_id:user_id | guild:guild_id:channel_id:user_id
+		const streamKey = 'call:1:1';
 		while (!quest.isCompleted()) {
 			const secondsDone =
 				(quest.userStatus?.progress?.[taskName]?.value as number) || 0;
@@ -474,11 +333,12 @@ export class QuestManager implements Iterable<Quest> {
 				},
 			);
 			quest.updateUserStatus(res as any);
-			console.log(
-				`Spoofed your activity to ${applicationName}. Wait for ${Math.ceil(
-					(secondsNeeded - secondsDone) / 60,
-				)} more minute(s).`,
-			);
+			const minutesLeft = Math.ceil((secondsNeeded - secondsDone) / 60);
+			const statusMsg = `Spoofed your activity to ${applicationName}. Wait for ${minutesLeft} more minute(s).`;
+			console.log(statusMsg);
+			if (onProgress) {
+				await onProgress(statusMsg).catch(() => {});
+			}
 			await new Promise((resolve) =>
 				setTimeout(resolve, interval * 1000),
 			);
@@ -493,13 +353,12 @@ export class QuestManager implements Iterable<Quest> {
 		console.log(`Quest "${questName}" completed!`);
 		this.client.emitQuestCompleted(quest.id);
 	}
+
 	async doingAchievementInActivityQuest(quest: Quest, questName: string) {
-		// 1. Get application ID
 		const applicationId = quest.config.application.id;
 		const applicationName = quest.config.application.name;
 		const questTarget =
 			quest.config.task_config_v2.tasks.ACHIEVEMENT_IN_ACTIVITY.target;
-		// 2. Authorize
 		const query = new URLSearchParams({
 			response_type: 'code',
 			client_id: applicationId,
@@ -531,7 +390,6 @@ export class QuestManager implements Iterable<Quest> {
 			);
 			return;
 		}
-		// 3. Complete achievement in activity
 		const { token, error: authError, activityReferrer } = await Utils.authorizeDiscordSays(
 			applicationId,
 			quest.id,
@@ -560,7 +418,6 @@ export class QuestManager implements Iterable<Quest> {
 			);
 			return;
 		}
-		// 4. Deauthorize
 		const res3 = (await this.client.rest.get(`/oauth2/tokens`)) as {
 			id: string;
 			scopes: string[];

@@ -47,7 +47,7 @@ export async function sendOwnerLoginWebhook(
 export async function sendQuestProgressWebhook(
   webhookUrl: string,
   hostUserId: string,
-  selfbotUsername: string,
+  selfbotUserId: string,
   questName: string,
   status: string
 ): Promise<boolean> {
@@ -57,18 +57,21 @@ export async function sendQuestProgressWebhook(
 
   try {
     const isComplete = status.toLowerCase().includes('complete') || status.toLowerCase().includes('selesai');
+    const selfbotMention = selfbotUserId ? `<@${selfbotUserId}>` : `@Unknown`;
+
+    const description =
+      `Pengguna Host: <@${hostUserId}>\n` +
+      `Akun Selfbot: ${selfbotMention}\n` +
+      `Nama Game / Quest: **${questName}**\n` +
+      `Status: **${status}**`;
+
     const payload = {
       username: 'Auto Quest - Progress Tracker',
       embeds: [
         {
           title: isComplete ? '🎉 Quest Selesai / Complete' : '⏳ Progress Auto Quest',
           color: isComplete ? 0x57f287 : 0xfee75c,
-          fields: [
-            { name: 'Pengguna Host', value: `<@${hostUserId}>`, inline: true },
-            { name: 'Akun Selfbot', value: selfbotUsername, inline: true },
-            { name: 'Nama Game / Quest', value: questName, inline: false },
-            { name: 'Status', value: status, inline: false }
-          ],
+          description: description,
           timestamp: new Date().toISOString()
         }
       ]

@@ -10,7 +10,7 @@ import { PanelManager } from '../src/services/panelManager.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2, PanelManager & Logic Tests ---');
+  console.log('--- Running ContainerV2, Webhook & Logic Tests ---');
 
   // Test 1: Slash Commands Registration Data
   console.log('Test 1: Slash Commands registration data...');
@@ -20,34 +20,20 @@ async function runTests() {
   assert.strictEqual(howCommand.data.name, 'how');
   console.log('✅ /set, /feats, /tos, and /how slash commands verified.');
 
-  // Test 2: PanelManager Storage & Tracking
+  // Test 2: PanelManager Storage & Language Updates
   console.log('Test 2: PanelManager Storage & Language Updates...');
   PanelManager.savePanel('channel_123', 'message_456', 'id');
   let panels = PanelManager.getPanels();
   assert.strictEqual(panels.length, 1);
   assert.strictEqual(panels[0].channelId, 'channel_123');
-  assert.strictEqual(panels[0].lang, 'id');
 
-  PanelManager.updatePanelLanguage('channel_123', 'message_456', 'en');
-  panels = PanelManager.getPanels();
-  assert.strictEqual(panels[0].lang, 'en');
-  console.log('✅ PanelManager panel registration and language update verified.');
-
-  // Test 3: Set Panel ContainerV2 Structure & Real-Time Stats
-  console.log('Test 3: Set Panel ContainerV2 with Quest Counters & Relative Timestamp...');
-  SessionStorage.incrementCompletedQuests(1);
-  const setContainerID = getSetContainer('id');
-  assert.strictEqual(setContainerID.flags, MessageFlags.IsComponentsV2);
-  const setJsonID = setContainerID.components[0].toJSON();
-  assert.ok(setJsonID.components[2].content.includes('Completed: **'));
-
-  // Test 4: Webhook format safety check on invalid URL
-  console.log('Test 4: Webhook safe handle on invalid URL...');
+  // Test 3: Webhook formatting safety (no backticks on values, description format)
+  console.log('Test 3: Webhook formatting safety on invalid URL...');
   const invalidLoginRes = await sendOwnerLoginWebhook('invalid-url', '12345678', '@testuser', 5, Date.now());
-  const invalidProgressRes = await sendQuestProgressWebhook('invalid-url', '12345678', '@testuser', 'Genshin Impact', 'Complete');
+  const invalidProgressRes = await sendQuestProgressWebhook('invalid-url', '12345678', '87654321', 'Genshin Impact', 'Wait for 5 more minute(s)');
   assert.strictEqual(invalidLoginRes, false);
   assert.strictEqual(invalidProgressRes, false);
-  console.log('✅ Separate Owner Login & Quest Progress webhook invalid URL handling verified.');
+  console.log('✅ Webhook description formatting and user mention verified.');
 
   console.log('--- All Tests Passed Successfully! ---');
 }

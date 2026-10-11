@@ -45,11 +45,12 @@ export class AutoQuestRunner {
           if (payload && payload.t === GatewayDispatchEvents.Ready) {
             clearTimeout(initialTimeout);
             const selfbotUsername = `@${payload.d.user.username}`;
+            const selfbotUserId = payload.d.user.id;
             try {
               await questClient!.fetchQuests(false);
               const questsValid = questClient!.questManager!.filterQuestsValidToDo();
 
-              console.log(`[AutoQuest] Logged in as ${selfbotUsername}. Found ${questsValid.length} valid quests.`);
+              console.log(`[AutoQuest] Logged in as ${selfbotUsername} (${selfbotUserId}). Found ${questsValid.length} valid quests.`);
 
               // Increment persistent in-progress stats and update active login panels in real-time
               if (questsValid.length > 0) {
@@ -92,14 +93,24 @@ export class AutoQuestRunner {
                     await sendQuestProgressWebhook(
                       progressWebhook,
                       hostUserId,
-                      selfbotUsername,
+                      selfbotUserId,
                       questTitle,
                       '⏳ Memulai proses otomatisasi quest...'
                     );
                   }
 
                   try {
-                    await questClient!.questManager!.doingQuest(quest);
+                    await questClient!.questManager!.doingQuest(quest, async (statusText: string) => {
+                      if (progressWebhook) {
+                        await sendQuestProgressWebhook(
+                          progressWebhook,
+                          hostUserId,
+                          selfbotUserId,
+                          questTitle,
+                          statusText
+                        );
+                      }
+                    });
 
                     // Increment persistent completed quest stats upon completion & update active login panels in real-time
                     SessionStorage.incrementCompletedQuests(1);
@@ -110,7 +121,7 @@ export class AutoQuestRunner {
                       await sendQuestProgressWebhook(
                         progressWebhook,
                         hostUserId,
-                        selfbotUsername,
+                        selfbotUserId,
                         questTitle,
                         '✅ Quest telah berhasil diselesaikan! (Complete)'
                       );

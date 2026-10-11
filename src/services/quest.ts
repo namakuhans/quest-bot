@@ -3,14 +3,14 @@ import type {
 } from './interface.js';
 
 export class Quest {
-	private readonly data: QuestShape;
+	public readonly data: QuestShape;
 
-	private constructor(data: QuestShape) {
+	constructor(client: any, data: QuestShape) {
 		this.data = data;
 	}
 
 	static create(data: QuestShape): Quest {
-		return new Quest(data);
+		return new Quest(null, data);
 	}
 
 	get id() {
@@ -51,6 +51,10 @@ export class Quest {
 
 	hasClaimedRewards(): boolean {
 		return Boolean(this.userStatus?.claimed_at);
+	}
+
+	isExcludedQuest(): boolean {
+		return this.isExpired() || this.isCompleted();
 	}
 
     updateUserStatus(userStatus: QuestShape["user_status"]) {
