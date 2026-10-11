@@ -1,3 +1,4 @@
+import fs from 'fs';
 import {
   ModalBuilder,
   TextInputBuilder,
@@ -5,15 +6,16 @@ import {
   ActionRowBuilder,
   ModalSubmitInteraction,
   ButtonInteraction,
-  StringSelectMenuInteraction
+  StringSelectMenuInteraction,
+  EmbedBuilder,
+  AttachmentBuilder
 } from 'discord.js';
 import { AutoQuestRunner } from '../services/runner.js';
 import { SessionStorage } from '../services/sessionStore.js';
 import { getSetContainer } from '../commands/set.js';
 import { getFeatsContainer } from '../commands/feats.js';
-import { getTosContainer } from '../commands/tos.js';
+import { getTosContainer, getTosNoticeAttachment } from '../commands/tos.js';
 import { getHowContainer, getAttachmentFile } from '../commands/how.js';
-import { PanelManager } from '../services/panelManager.js';
 
 export async function handleButtonInteraction(interaction: ButtonInteraction) {
   if (interaction.customId === 'open_login_modal') {
@@ -75,8 +77,21 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
             lastStatus: 'SUCCESS'
           });
 
+          const successEmbed = new EmbedBuilder()
+            .setTitle('🚀 Otomatisasi Discord Quest Berhasil Dimulai')
+            .setDescription('Otentikasi akun berhasil diverifikasi. Sistem kini secara otomatis memproses tugas quest Anda di latar belakang.')
+            .setColor(0x57f287)
+            .addFields(
+              { name: 'Pengguna Host', value: `<@${interaction.user.id}>`, inline: true },
+              { name: 'Akun Selfbot Terhubung', value: result.username || 'Unspecified', inline: true },
+              { name: 'Quest Diproses', value: `${result.questCount || 0} Quest Valid`, inline: true },
+              { name: 'Status Notifikasi', value: webhookUrl ? 'Laporan dikirim ke Webhook Custom' : 'Laporan dikirim ke Webhook Default System', inline: false }
+            )
+            .setFooter({ text: 'Discord Auto Quest • Background Automation Running' })
+            .setTimestamp();
+
           await interaction.followUp({
-            content: `✅ **Auto Quest Berhasil Dimulai!**\n• User Host: <@${interaction.user.id}>\n• Akun Selfbot: \`${result.username}\`\n• Quest Ditemukan: \`${result.questCount}\` quest sedang diproses di background.\n• Notifikasi: Laporan penyelesaian quest akan dikirimkan via Webhook.`,
+            embeds: [successEmbed],
             ephemeral: true
           }).catch(() => {});
         } else {
@@ -89,15 +104,29 @@ export async function handleModalSubmit(interaction: ModalSubmitInteraction) {
             lastStatus: `FAILED: ${result.error}`
           });
 
+          const errorEmbed = new EmbedBuilder()
+            .setTitle('❌ Otentikasi Gagal')
+            .setDescription(`Proses inisialisasi otentikasi akun tidak dapat dilanjutkan.\n\n**Alasan**: ${result.error}`)
+            .setColor(0xed4245)
+            .setFooter({ text: 'Discord Auto Quest • Authentication Error' })
+            .setTimestamp();
+
           await interaction.followUp({
-            content: `❌ **Otentikasi Gagal**: ${result.error}`,
+            embeds: [errorEmbed],
             ephemeral: true
           }).catch(() => {});
         }
       })
       .catch(async (err) => {
+        const errorEmbed = new EmbedBuilder()
+          .setTitle('❌ Terjadi Kesalahan Sistem')
+          .setDescription(`Gagal memproses permintaan otentikasi.\n\n**Rincian**: ${err.message}`)
+          .setColor(0xed4245)
+          .setFooter({ text: 'Discord Auto Quest • Internal Error' })
+          .setTimestamp();
+
         await interaction.followUp({
-          content: `❌ **Terjadi kesalahan tak terduga**: ${err.message}`,
+          embeds: [errorEmbed],
           ephemeral: true
         }).catch(() => {});
       });
@@ -110,10 +139,6 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
   if (interaction.customId === 'set_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const containerData = getSetContainer(selectedLang);
-
-    if (interaction.channelId && interaction.message.id) {
-      PanelManager.updatePanelLanguage(interaction.channelId, interaction.message.id, selectedLang);
-    }
 
     await interaction.editReply({
       flags: containerData.flags as any,
@@ -129,20 +154,45 @@ export async function handleSelectMenuInteraction(interaction: StringSelectMenuI
     });
   } else if (interaction.customId === 'tos_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
-    const containerData = getTosContainer(selectedLang);
+    const noticeInfo = getTosNoticeAttachment();
+    const containerData = getTosContainer(selectedLang, noticeInfo.fileName);
 
-    await interaction.editReply({
-      flags: containerData.flags as any,
-      components: containerData.components as any
-    });
+    if (noticeInfo.attachmentPath && noticeInfo.fileName) {
+      const fileBuffer = await fs.promises.readFile(noticeInfo.attachmentPath);
+      const attachment = new AttachmentBuilder(fileBuffer, { name: noticeInfo.fileName });
+
+      await interaction.editReply({
+        flags: containerData.flags as any,
+        components: containerData.components as any,
+        files: [attachment]
+      });
+    } else {
+      const noFileContainer = getTosContainer(selectedLang);
+      await interaction.editReply({
+        flags: noFileContainer.flags as any,
+        components: noFileContainer.components as any
+      });
+    }
   } else if (interaction.customId === 'how_language_select') {
     const selectedLang = interaction.values[0] as 'id' | 'en';
     const fileInfo = getAttachmentFile();
     const containerData = getHowContainer(selectedLang, fileInfo.fileName);
 
-    await interaction.editReply({
-      flags: containerData.flags as any,
-      components: containerData.components as any
-    });
+    if (fileInfo.attachmentPath && fileInfo.fileName) {
+      const fileBuffer = await fs.promises.readFile(fileInfo.attachmentPath);
+      const attachment = new AttachmentBuilder(fileBuffer, { name: fileInfo.fileName });
+
+      await interaction.editReply({
+        flags: containerData.flags as any,
+        components: containerData.components as any,
+        files: [attachment]
+      });
+    } else {
+      const noFileContainer = getHowContainer(selectedLang);
+      await interaction.editReply({
+        flags: noFileContainer.flags as any,
+        components: noFileContainer.components as any
+      });
+    }
   }
 }
