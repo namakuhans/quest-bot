@@ -102,7 +102,12 @@ export const setCommand = {
     });
 
     if (replyMessage && interaction.channelId) {
-      PanelManager.savePanel(interaction.channelId, replyMessage.id, 'id');
+      PanelManager.savePanel(
+        interaction.channelId,
+        replyMessage.id,
+        interaction.guildId || undefined,
+        'id'
+      );
     }
   }
 };

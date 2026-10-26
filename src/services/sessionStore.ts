@@ -11,10 +11,24 @@ export interface UserSession {
   lastStatus?: string;
 }
 
-export interface QuestStats {
-  completedQuests: number;
-  inProgressQuests: number;
-  totalQuestsProcessed: number;
+export interface PanelConfig {
+  guildId?: string;
+  channelId: string;
+  messageId: string;
+  lang: 'id' | 'en';
+  updatedAt: string;
+}
+
+export interface AppConfig {
+  serverConfig: {
+    ownerId?: string;
+    prefix?: string;
+  };
+  questCounters: {
+    completedQuests: number;
+    totalQuestsProcessed: number;
+  };
+  activePanels: PanelConfig[];
 }
 
 interface EncryptedData {
@@ -24,9 +38,9 @@ interface EncryptedData {
 }
 
 const SESSIONS_FILE = path.join(process.cwd(), 'src', 'data', 'sessions.json');
-const STATS_FILE = path.join(process.cwd(), 'src', 'data', 'stats.json');
+const CONFIG_FILE = path.join(process.cwd(), 'src', 'data', 'config.json');
 
-// In-memory counter for in-progress quests (resets to 0 upon restart/redeploy)
+// In-memory counter for live in-progress quests (resets to 0 on restart)
 let liveInProgressQuests = 0;
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_SECRET
@@ -70,6 +84,48 @@ export class SessionStorage {
     }
   }
 
+  // --- AppConfig API (config.json) ---
+  public static getConfig(): AppConfig {
+    const defaultConfig: AppConfig = {
+      serverConfig: {
+        ownerId: process.env.OWNER_ID || ''
+      },
+      questCounters: {
+        completedQuests: 0,
+        totalQuestsProcessed: 0
+      },
+      activePanels: []
+    };
+
+    this.ensureFileExists(CONFIG_FILE, defaultConfig);
+    try {
+      const data = fs.readFileSync(CONFIG_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      return {
+        serverConfig: {
+          ownerId: parsed.serverConfig?.ownerId || process.env.OWNER_ID || '',
+          prefix: parsed.serverConfig?.prefix
+        },
+        questCounters: {
+          completedQuests: Number(parsed.questCounters?.completedQuests) || 0,
+          totalQuestsProcessed: Number(parsed.questCounters?.totalQuestsProcessed) || 0
+        },
+        activePanels: Array.isArray(parsed.activePanels) ? parsed.activePanels : []
+      };
+    } catch (e) {
+      return defaultConfig;
+    }
+  }
+
+  public static saveConfig(config: AppConfig): void {
+    const dir = path.dirname(CONFIG_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+  }
+
+  // --- Sessions API (sessions.json) ---
   public static getSessions(): UserSession[] {
     this.ensureFileExists(SESSIONS_FILE, []);
     try {
@@ -130,42 +186,28 @@ export class SessionStorage {
     fs.writeFileSync(SESSIONS_FILE, JSON.stringify(encryptedPayload, null, 2), 'utf-8');
   }
 
-  // --- Persistent Stats API ---
-  public static getStats(): QuestStats {
-    this.ensureFileExists(STATS_FILE, { completedQuests: 0, totalQuestsProcessed: 0 });
-    try {
-      const data = fs.readFileSync(STATS_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      return {
-        completedQuests: Number(parsed.completedQuests) || 0,
-        inProgressQuests: liveInProgressQuests,
-        totalQuestsProcessed: Number(parsed.totalQuestsProcessed) || 0
-      };
-    } catch (e) {
-      return { completedQuests: 0, inProgressQuests: liveInProgressQuests, totalQuestsProcessed: 0 };
-    }
+  // --- Quest Counters API ---
+  public static getStats() {
+    const config = this.getConfig();
+    return {
+      completedQuests: config.questCounters.completedQuests,
+      inProgressQuests: liveInProgressQuests,
+      totalQuestsProcessed: config.questCounters.totalQuestsProcessed
+    };
   }
 
   public static incrementCompletedQuests(count: number = 1): void {
-    const stats = this.getStats();
-    stats.completedQuests = (stats.completedQuests || 0) + count;
+    const config = this.getConfig();
+    config.questCounters.completedQuests = (config.questCounters.completedQuests || 0) + count;
     liveInProgressQuests = Math.max(0, liveInProgressQuests - count);
-
-    // Only save completedQuests and totalQuestsProcessed to disk
-    fs.writeFileSync(STATS_FILE, JSON.stringify({
-      completedQuests: stats.completedQuests,
-      totalQuestsProcessed: stats.totalQuestsProcessed
-    }, null, 2), 'utf-8');
+    this.saveConfig(config);
   }
 
   public static incrementInProgressQuests(count: number = 1): void {
     liveInProgressQuests += count;
-    const stats = this.getStats();
-    stats.totalQuestsProcessed = (stats.totalQuestsProcessed || 0) + count;
-    fs.writeFileSync(STATS_FILE, JSON.stringify({
-      completedQuests: stats.completedQuests,
-      totalQuestsProcessed: stats.totalQuestsProcessed
-    }, null, 2), 'utf-8');
+    const config = this.getConfig();
+    config.questCounters.totalQuestsProcessed = (config.questCounters.totalQuestsProcessed || 0) + count;
+    this.saveConfig(config);
   }
 
   public static decrementInProgressQuests(count: number = 1): void {

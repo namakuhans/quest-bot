@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, REST, Routes, Interaction } from 'discord.js';
+import { Client, GatewayIntentBits, REST, Routes, Interaction, Options } from 'discord.js';
 import dotenv from 'dotenv';
 import { setCommand } from './commands/set.js';
 import { featsCommand } from './commands/feats.js';
@@ -9,6 +9,7 @@ import {
   handleModalSubmit,
   handleSelectMenuInteraction
 } from './events/interactionHandler.js';
+import { PanelManager } from './services/panelManager.js';
 
 dotenv.config();
 
@@ -23,6 +24,25 @@ if (!token) {
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
+  makeCache: Options.cacheWithLimits({
+    MessageManager: 0,
+    GuildMemberManager: 0,
+    UserManager: 0,
+    PresenceManager: 0,
+    ReactionManager: 0,
+    ThreadManager: 0,
+    ThreadMemberManager: 0,
+    VoiceStateManager: 0,
+    StageInstanceManager: 0,
+    GuildScheduledEventManager: 0,
+    AutoModerationRuleManager: 0,
+    BaseGuildEmojiManager: 0,
+    GuildBanManager: 0,
+    GuildInviteManager: 0,
+    GuildStickerManager: 0,
+    ApplicationCommandManager: 0,
+    ReactionUserManager: 0
+  }),
   rest: {
     timeout: 120000,
     retries: 5
@@ -50,6 +70,9 @@ client.once('ready', async () => {
       console.error('Failed to register slash commands:', err);
     }
   }
+
+  // Start background panel ticker (30s interval)
+  PanelManager.startRealtimeTicker(30000);
 });
 
 client.on('interactionCreate', async (interaction: Interaction) => {

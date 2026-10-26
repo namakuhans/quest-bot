@@ -1,78 +1,57 @@
-import fs from 'fs';
-import path from 'path';
-import { Client, REST, Routes, InteractionResponseType } from 'discord.js';
+import { REST, Routes } from 'discord.js';
 import { getSetContainer } from '../commands/set.js';
-
-export interface PanelReference {
-  channelId: string;
-  messageId: string;
-  lang: 'id' | 'en';
-  updatedAt: string;
-}
-
-const PANELS_FILE = path.join(process.cwd(), 'src', 'data', 'panels.json');
+import { SessionStorage, PanelConfig } from './sessionStore.js';
 
 export class PanelManager {
-  private static globalClient: Client | null = null;
+  private static tickerInterval: NodeJS.Timeout | null = null;
 
-  public static setClient(client: Client) {
-    this.globalClient = client;
+  public static getPanels(): PanelConfig[] {
+    const config = SessionStorage.getConfig();
+    return config.activePanels || [];
   }
 
-  private static ensureFileExists() {
-    const dir = path.dirname(PANELS_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    if (!fs.existsSync(PANELS_FILE)) {
-      fs.writeFileSync(PANELS_FILE, JSON.stringify([], null, 2), 'utf-8');
-    }
-  }
+  public static savePanel(channelId: string, messageId: string, guildId?: string, lang: 'id' | 'en' = 'id'): void {
+    const config = SessionStorage.getConfig();
+    const existingIndex = config.activePanels.findIndex((p) => p.channelId === channelId && p.messageId === messageId);
 
-  public static getPanels(): PanelReference[] {
-    this.ensureFileExists();
-    try {
-      const data = fs.readFileSync(PANELS_FILE, 'utf-8');
-      return JSON.parse(data) as PanelReference[];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  public static savePanel(channelId: string, messageId: string, lang: 'id' | 'en' = 'id'): void {
-    const panels = this.getPanels();
-    const existingIndex = panels.findIndex((p) => p.channelId === channelId && p.messageId === messageId);
+    const panelEntry: PanelConfig = {
+      guildId,
+      channelId,
+      messageId,
+      lang,
+      updatedAt: new Date().toISOString()
+    };
 
     if (existingIndex >= 0) {
-      panels[existingIndex] = { channelId, messageId, lang, updatedAt: new Date().toISOString() };
+      config.activePanels[existingIndex] = panelEntry;
     } else {
-      panels.push({ channelId, messageId, lang, updatedAt: new Date().toISOString() });
+      config.activePanels.push(panelEntry);
     }
 
-    fs.writeFileSync(PANELS_FILE, JSON.stringify(panels, null, 2), 'utf-8');
+    SessionStorage.saveConfig(config);
   }
 
   public static updatePanelLanguage(channelId: string, messageId: string, lang: 'id' | 'en'): void {
-    const panels = this.getPanels();
-    const existingIndex = panels.findIndex((p) => p.channelId === channelId && p.messageId === messageId);
+    const config = SessionStorage.getConfig();
+    const existingIndex = config.activePanels.findIndex((p) => p.channelId === channelId && p.messageId === messageId);
     if (existingIndex >= 0) {
-      panels[existingIndex].lang = lang;
-      panels[existingIndex].updatedAt = new Date().toISOString();
-      fs.writeFileSync(PANELS_FILE, JSON.stringify(panels, null, 2), 'utf-8');
+      config.activePanels[existingIndex].lang = lang;
+      config.activePanels[existingIndex].updatedAt = new Date().toISOString();
+      SessionStorage.saveConfig(config);
     }
   }
 
   public static async refreshActivePanels(): Promise<void> {
-    const panels = this.getPanels();
-    if (panels.length === 0) return;
+    const config = SessionStorage.getConfig();
+    if (!config.activePanels || config.activePanels.length === 0) return;
 
     const token = process.env.DISCORD_TOKEN;
     if (!token) return;
 
     const rest = new REST({ timeout: 60000, retries: 5 }).setToken(token);
-    const validPanels: PanelReference[] = [];
+    const validPanels: PanelConfig[] = [];
 
-    for (const panel of panels) {
+    for (const panel of config.activePanels) {
       try {
         const containerData = getSetContainer(panel.lang);
         await rest.patch(Routes.channelMessage(panel.channelId, panel.messageId), {
@@ -83,13 +62,31 @@ export class PanelManager {
         });
         validPanels.push(panel);
       } catch (err: any) {
-        console.error(`[PanelManager] Failed to update panel in channel ${panel.channelId}:`, err.message);
         // If message was deleted or channel not found, skip saving it
       }
     }
 
-    if (validPanels.length !== panels.length) {
-      fs.writeFileSync(PANELS_FILE, JSON.stringify(validPanels, null, 2), 'utf-8');
+    if (validPanels.length !== config.activePanels.length) {
+      config.activePanels = validPanels;
+      SessionStorage.saveConfig(config);
+    }
+  }
+
+  public static startRealtimeTicker(intervalMs: number = 30000): void {
+    if (this.tickerInterval) return;
+
+    // Background safety interval (default 30 seconds) to avoid HTTP 429 rate limits
+    this.tickerInterval = setInterval(() => {
+      this.refreshActivePanels().catch(() => {});
+    }, intervalMs);
+
+    console.log(`⏱️ Background Panel Ticker started (${intervalMs}ms interval)`);
+  }
+
+  public static stopRealtimeTicker(): void {
+    if (this.tickerInterval) {
+      clearInterval(this.tickerInterval);
+      this.tickerInterval = null;
     }
   }
 }

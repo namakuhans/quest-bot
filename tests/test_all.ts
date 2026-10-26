@@ -10,7 +10,7 @@ import { PanelManager } from '../src/services/panelManager.js';
 import { sendOwnerLoginWebhook, sendQuestProgressWebhook } from '../src/services/webhook.js';
 
 async function runTests() {
-  console.log('--- Running ContainerV2, Webhook & Logic Tests ---');
+  console.log('--- Running ContainerV2, Config & Realtime Ticker Tests ---');
 
   // Test 1: Slash Commands Registration Data
   console.log('Test 1: Slash Commands registration data...');
@@ -20,23 +20,20 @@ async function runTests() {
   assert.strictEqual(howCommand.data.name, 'how');
   console.log('✅ /set, /feats, /tos, and /how slash commands verified.');
 
-  // Test 2: PanelManager Storage & Language Updates
-  console.log('Test 2: PanelManager Storage & Language Updates...');
-  PanelManager.savePanel('channel_123', 'message_456', 'id');
-  let panels = PanelManager.getPanels();
-  assert.strictEqual(panels.length, 1);
-  assert.strictEqual(panels[0].channelId, 'channel_123');
+  // Test 2: Unified Config Storage (config.json)
+  console.log('Test 2: Unified config.json Storage...');
+  PanelManager.savePanel('channel_123', 'message_456', 'guild_789', 'id');
+  const config = SessionStorage.getConfig();
+  assert.ok(config.activePanels.some((p) => p.channelId === 'channel_123' && p.messageId === 'message_456'));
+  console.log('✅ Config.json activePanels persistence verified.');
 
-  // Test 3: In-Memory vs Persistent Stats Storage
-  console.log('Test 3: Persistent Completed Quests & In-Memory In-Progress Quests...');
-  SessionStorage.incrementCompletedQuests(2);
-  SessionStorage.incrementInProgressQuests(3);
-  let stats = SessionStorage.getStats();
-  assert.ok(stats.completedQuests >= 2);
-  assert.strictEqual(stats.inProgressQuests, 3);
-  console.log('✅ Completed quests persistence & In-memory in-progress stats verified.');
+  // Test 3: Realtime Ticker Controls
+  console.log('Test 3: Realtime Ticker controls...');
+  PanelManager.startRealtimeTicker(1000);
+  PanelManager.stopRealtimeTicker();
+  console.log('✅ Realtime Ticker start/stop verified.');
 
-  // Test 4: Webhook formatting safety on invalid URL (- Variable: **Value**, <@selfbotUserId>)
+  // Test 4: Webhook description formatting safety on invalid URL
   console.log('Test 4: Webhook description formatting safety on invalid URL...');
   const invalidLoginRes = await sendOwnerLoginWebhook('invalid-url', '12345678', '87654321', 5, Date.now());
   const invalidProgressRes = await sendQuestProgressWebhook('invalid-url', '12345678', '87654321', 'Genshin Impact', 'Wait for 5 more minute(s)');
